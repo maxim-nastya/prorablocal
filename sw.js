@@ -1,4 +1,4 @@
-const CACHE_NAME = 'prorab-cache-v7.0'; // Version bumped to force update
+const CACHE_NAME = 'prorab-cache-v8.0'; // Version bumped to force update
 const APP_SHELL_URL = './index.html';
 const urlsToCache = [
   './',
