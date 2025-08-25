@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { GoogleGenAI } from '@google/genai';
+import { useState, useEffect, useMemo } from 'react';
 import { api } from './api';
 import { useToasts, Loader, Modal, PhotoViewerModal } from './components';
 import { formatCurrency, generateId, fileToBase64 } from './utils';
@@ -9,9 +8,10 @@ import type {
     ProjectDocument, ProjectNote, ProjectDetailsViewProps, EstimateEditorProps
 } from './types';
 import {
-    EditIcon, DeleteIcon, CheckIcon, ReplayIcon, DocumentIcon, ImageIcon,
+    EditIcon, DeleteIcon, CheckIcon, ReplayIcon, DocumentIcon,
     SearchIcon, ShareIcon, ShoppingListIcon, CommentIcon, SaveTemplateIcon, TemplateIcon
 } from './icons';
+import { ProjectFormModal } from './view_ProjectFormModal';
 
 // --- SUB-COMPONENTS for ProjectDetailsView ---
 
@@ -1405,6 +1405,13 @@ _________________ (Заказчик)
                     </>
                 )}
             </Modal>
+            
+            <ProjectFormModal
+                show={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                onSave={handleUpdateProject}
+                existingProject={project}
+            />
         </>
     );
 };

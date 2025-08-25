@@ -178,7 +178,7 @@ export const PublicEstimateView = () => {
                                     <td className="align-right">
                                         <button className="action-btn comment-btn" onClick={() => { setCommentingItem(item); setShowCommentModal(true); }}>
                                             <CommentIcon />
-                                            {(item.comments?.length || 0) > 0 && <span className="comment-badge">{item.comments.length}</span>}
+                                            {(item.comments?.length || 0) > 0 && <span className="comment-badge">{item.comments?.length}</span>}
                                         </button>
                                     </td>
                                 </tr>

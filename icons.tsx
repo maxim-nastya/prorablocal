@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const LogoIcon = ({ size = 32 }: { size?: number }) => (
     <img src="./logo.svg" alt="Логотип Прораб" width={size} height={size} className="app-logo-img" />
 );

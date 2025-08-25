@@ -5,7 +5,6 @@ import { DeleteIcon } from './icons';
 import type { InventoryItem, ProjectNote, Project } from './types';
 
 export const InventoryView = ({ inventory, setInventory, notes, setNotes, projects }: { inventory: InventoryItem[], setInventory: Dispatch<SetStateAction<InventoryItem[]>>, notes: ProjectNote[], setNotes: Dispatch<SetStateAction<ProjectNote[]>>, projects: Project[] }) => {
-    const { addToast } = useToasts();
     const [showItemModal, setShowItemModal] = useState(false);
     const [newItemName, setNewItemName] = useState('');
     const [newNoteText, setNewNoteText] = useState('');
