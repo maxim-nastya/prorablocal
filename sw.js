@@ -1,4 +1,4 @@
-const CACHE_NAME = 'prorab-cache-v6.0'; // Version bumped for build system update
+const CACHE_NAME = 'prorab-cache-v6.1'; // Version bumped to ensure fresh assets are fetched
 const urlsToCache = [
   './',
   './index.html',
