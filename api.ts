@@ -1,4 +1,5 @@
-import type { User, Project, DirectoryItem, UserProfile, EstimateTemplate, InventoryItem, ProjectNote, Estimate } from './types';
+import type { User, Project, DirectoryItem, UserProfile, EstimateTemplate, InventoryItem, ProjectNote, Estimate, Comment } from './types';
+import { generateId } from './utils';
 
 // --- Local Storage Database ---
 
@@ -157,6 +158,36 @@ export const api = {
             }
         }
         throw new Error('Could not approve estimate');
+    },
+
+    async addPublicComment(projectId: string, estimateId: string, itemId: string, commentText: string): Promise<{ success: boolean }> {
+        const db = getDb();
+        const newComment: Comment = {
+            id: generateId(),
+            author: 'Клиент',
+            text: commentText,
+            timestamp: new Date().toISOString()
+        };
+
+        for (const email in db.data) {
+            const userData = db.data[email];
+            const project = userData.projects.find(p => p.id === projectId);
+            if (project) {
+                const estimate = project.estimates.find(e => e.id === estimateId);
+                if (estimate) {
+                    const item = estimate.items.find(i => i.id === itemId);
+                    if (item) {
+                        if (!item.comments) {
+                            item.comments = [];
+                        }
+                        item.comments.push(newComment);
+                        saveDb(db);
+                        return { success: true };
+                    }
+                }
+            }
+        }
+        throw new Error('Could not add comment: item not found');
     },
 
     // --- Data Saving ---

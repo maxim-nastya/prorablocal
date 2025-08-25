@@ -58,6 +58,7 @@ export const PublicEstimateView = () => {
     
     const [showCommentModal, setShowCommentModal] = useState(false);
     const [commentingItem, setCommentingItem] = useState<EstimateItem | null>(null);
+    const [urlParams, setUrlParams] = useState({ projectId: '', estimateId: '' });
     
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -69,6 +70,8 @@ export const PublicEstimateView = () => {
             setLoading(false);
             return;
         }
+
+        setUrlParams({ projectId, estimateId });
 
         const fetchData = async () => {
             try {
@@ -97,18 +100,17 @@ export const PublicEstimateView = () => {
         }
     };
 
-    const handleAddComment = (itemId: string, commentText: string) => {
+    const handleAddComment = async (itemId: string, commentText: string) => {
         if (!project || !estimate) return;
 
-        // Note: In a real app, this would be an API call to post a comment.
-        // For the mock, we just update local state. The change won't persist on reload.
+        // Optimistic UI update
+        const originalEstimate = estimate;
         const newComment: Comment = {
-            id: generateId(),
+            id: generateId(), // Temporary ID for UI
             author: 'Клиент',
             text: commentText,
             timestamp: new Date().toISOString()
         };
-
         const updatedEstimate = {
             ...estimate,
             items: estimate.items.map(item =>
@@ -116,7 +118,15 @@ export const PublicEstimateView = () => {
             )
         };
         setEstimate(updatedEstimate);
-        addToast("Комментарий добавлен (в демо-режиме)", "success");
+        
+        // Persist change
+        try {
+            await api.addPublicComment(urlParams.projectId, urlParams.estimateId, itemId, commentText);
+            addToast("Комментарий добавлен", "success");
+        } catch (err) {
+             addToast('Не удалось сохранить комментарий. Пожалуйста, обновите страницу.', 'error');
+             setEstimate(originalEstimate); // Revert on failure
+        }
     };
 
     if (loading) return <Loader fullScreen />;

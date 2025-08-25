@@ -1,17 +1,15 @@
-const CACHE_NAME = 'prorab-cache-v6.3'; // Version bumped to force update
+const CACHE_NAME = 'prorab-cache-v7.0'; // Version bumped to force update
 const APP_SHELL_URL = './index.html';
 const urlsToCache = [
   './',
-  APP_SHELL_URL,
-  './index.css',
-  './index.tsx',
+  './index.html',
   './logo.svg',
   './manifest.json',
+  './icons/icon.svg',
   './icons/prorab-192.png',
   './icons/prorab-512.png',
   './icons/prorab-maskable-512.png',
-  './icons/apple-touch-icon-180.png',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
+  './icons/apple-touch-icon-180.png'
 ];
 
 self.addEventListener('install', event => {
