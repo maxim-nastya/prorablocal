@@ -1,13 +1,12 @@
-const CACHE_NAME = 'prorab-cache-v6.2'; // Version bumped to force update
+const CACHE_NAME = 'prorab-cache-v6.3'; // Version bumped to force update
 const APP_SHELL_URL = './index.html';
 const urlsToCache = [
   './',
   APP_SHELL_URL,
-  './assets/index.css',
-  './assets/index.js',
+  './index.css',
+  './index.tsx',
   './logo.svg',
   './manifest.json',
-  './icons/icon.svg',
   './icons/prorab-192.png',
   './icons/prorab-512.png',
   './icons/prorab-maskable-512.png',
@@ -60,7 +59,7 @@ self.addEventListener('fetch', event => {
         // If not in cache, fetch from the network, cache it, and then serve it.
         return fetch(event.request).then(networkResponse => {
           // Check for a valid response to cache
-          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          if (networkResponse && networkResponse.status === 200) {
             const responseToCache = networkResponse.clone();
             caches.open(CACHE_NAME).then(cache => {
               cache.put(event.request, responseToCache);
