@@ -1,7 +1,8 @@
-const CACHE_NAME = 'prorab-cache-v6.1'; // Version bumped to ensure fresh assets are fetched
+const CACHE_NAME = 'prorab-cache-v6.2'; // Version bumped to force update
+const APP_SHELL_URL = './index.html';
 const urlsToCache = [
   './',
-  './index.html',
+  APP_SHELL_URL,
   './assets/index.css',
   './assets/index.js',
   './logo.svg',
@@ -36,38 +37,37 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-    const url = new URL(event.request.url);
-
-    // For API calls, always go to the network.
-    if (url.pathname.startsWith('/api/')) {
-        return; 
-    }
-
-    // For non-API calls (app shell, assets), use a cache-first strategy.
+  // For navigation requests, use a network-first strategy to get the latest shell,
+  // but fall back to the cached shell if offline.
+  if (event.request.mode === 'navigate') {
     event.respondWith(
-        caches.match(event.request).then(response => {
-            // Return from cache if found.
-            if (response) {
-                return response;
-            }
-
-            // Otherwise, fetch from the network.
-            return fetch(event.request).then(fetchResponse => {
-                // If we get a valid response, cache it for future offline use.
-                if (fetchResponse && fetchResponse.status === 200 && fetchResponse.type === 'basic') {
-                    const responseToCache = fetchResponse.clone();
-                    caches.open(CACHE_NAME).then(cache => {
-                        cache.put(event.request, responseToCache);
-                    });
-                }
-                return fetchResponse;
-            }).catch(() => {
-                // If the network fails, and it's a navigation request,
-                // you might want to return a fallback offline page.
-                if (event.request.mode === 'navigate') {
-                    return caches.match('./index.html');
-                }
-            });
-        })
+      fetch(event.request).catch(() => {
+        // Network failed, serve the cached app shell.
+        return caches.match(APP_SHELL_URL);
+      })
     );
+    return;
+  }
+
+  // For all other requests (assets like JS, CSS, images), use a cache-first strategy.
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        // If the resource is in the cache, serve it.
+        if (response) {
+          return response;
+        }
+        // If not in cache, fetch from the network, cache it, and then serve it.
+        return fetch(event.request).then(networkResponse => {
+          // Check for a valid response to cache
+          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return networkResponse;
+        });
+      })
+  );
 });
