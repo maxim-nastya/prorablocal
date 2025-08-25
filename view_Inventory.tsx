@@ -8,53 +8,86 @@ export const InventoryView = ({ inventory, setInventory, notes, setNotes, projec
     const [showItemModal, setShowItemModal] = useState(false);
     const [newItemName, setNewItemName] = useState('');
     const [newNoteText, setNewNoteText] = useState('');
+    const { addToast } = useToasts();
 
     const handleAddItem = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newItemName.trim()) return;
+        if (!newItemName.trim()) {
+            addToast('Название не может быть пустым', 'error');
+            return;
+        }
         const newItem: InventoryItem = {
             id: `id_${Date.now()}`,
             name: newItemName.trim(),
             location: 'На базе',
         };
-        const updatedInventory = [...inventory, newItem];
-        setInventory(updatedInventory);
-        await api.saveInventory(updatedInventory);
-        setNewItemName('');
-        setShowItemModal(false);
+        try {
+            const updatedInventory = [...inventory, newItem];
+            setInventory(updatedInventory);
+            await api.saveInventory(updatedInventory);
+            addToast('Инструмент добавлен', 'success');
+            setNewItemName('');
+            setShowItemModal(false);
+        } catch (error) {
+            addToast('Не удалось добавить инструмент', 'error');
+        }
     };
     
     const handleDeleteItem = async (itemId: string) => {
         if (!window.confirm('Удалить инструмент?')) return;
-        const updatedInventory = inventory.filter(i => i.id !== itemId);
-        setInventory(updatedInventory);
-        await api.saveInventory(updatedInventory);
+        try {
+            const updatedInventory = inventory.filter(i => i.id !== itemId);
+            setInventory(updatedInventory);
+            await api.saveInventory(updatedInventory);
+            addToast('Инструмент удален', 'success');
+        } catch (error) {
+            addToast('Не удалось удалить инструмент', 'error');
+        }
     };
 
     const handleLocationChange = async (itemId: string, location: string) => {
-        const updatedInventory = inventory.map(i => i.id === itemId ? {...i, location} : i);
-        setInventory(updatedInventory);
-        await api.saveInventory(updatedInventory);
+        try {
+            const updatedInventory = inventory.map(i => i.id === itemId ? {...i, location} : i);
+            setInventory(updatedInventory);
+            await api.saveInventory(updatedInventory);
+            addToast('Местоположение обновлено', 'success');
+        } catch (error) {
+            addToast('Не удалось обновить местоположение', 'error');
+        }
     };
 
     const handleAddNote = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newNoteText.trim()) return;
+        if (!newNoteText.trim()) {
+            addToast('Заметка не может быть пустой', 'error');
+            return;
+        }
         const newNote: ProjectNote = {
             id: `id_${Date.now()}`,
             text: newNoteText.trim(),
             createdAt: new Date().toISOString(),
         };
-        const updatedNotes = [newNote, ...notes];
-        setNotes(updatedNotes);
-        await api.saveInventoryNotes(updatedNotes);
-        setNewNoteText('');
+        try {
+            const updatedNotes = [newNote, ...notes];
+            setNotes(updatedNotes);
+            await api.saveInventoryNotes(updatedNotes);
+            addToast('Заметка добавлена', 'success');
+            setNewNoteText('');
+        } catch (error) {
+            addToast('Не удалось добавить заметку', 'error');
+        }
     };
     
     const handleDeleteNote = async (noteId: string) => {
-        const updatedNotes = notes.filter(n => n.id !== noteId);
-        setNotes(updatedNotes);
-        await api.saveInventoryNotes(updatedNotes);
+        if (!window.confirm('Удалить заметку?')) return;
+        try {
+            const updatedNotes = notes.filter(n => n.id !== noteId);
+            setNotes(updatedNotes);
+            await api.saveInventoryNotes(updatedNotes);
+            addToast('Заметка удалена', 'success');
+        } catch (error) {
+            addToast('Не удалось удалить заметку', 'error');
+        }
     };
 
     const activeProjects = projects.filter(p => p.status === 'В работе');
