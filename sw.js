@@ -38,9 +38,11 @@ self.addEventListener('fetch', event => {
   // Handle cached images first. These are user-uploaded and only exist in the cache.
   if (event.request.url.includes('/cached-images/')) {
     event.respondWith(
-      caches.match(event.request).then(cachedResponse => {
-        // Return the cached response if found, otherwise a 404.
-        return cachedResponse || new Response('Image not found in cache', { status: 404 });
+      caches.open(IMAGE_CACHE_NAME).then(cache => {
+        return cache.match(event.request).then(cachedResponse => {
+          // Return the cached response if found, otherwise a 404.
+          return cachedResponse || new Response('Image not found in cache', { status: 404 });
+        });
       })
     );
     return;

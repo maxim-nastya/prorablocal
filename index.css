@@ -1404,6 +1404,36 @@ tbody tr:hover {
 }
 
 
+/* 6.22 Collapsible Sections */
+.collapsible-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.collapsible-header h3 {
+    margin-bottom: 0 !important;
+}
+
+.collapsible-header .chevron {
+    transition: transform 0.2s ease-in-out;
+    color: hsl(var(--text-secondary));
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.collapsible-header[aria-expanded="true"] .chevron {
+    transform: rotate(180deg);
+}
+
+.collapsible-content {
+    animation: fade-slide-up 0.3s ease-out;
+    padding-top: var(--space-5);
+}
+
+
 /* 7. Accessibility & Mobile */
 @media (prefers-reduced-motion: reduce) {
     * {

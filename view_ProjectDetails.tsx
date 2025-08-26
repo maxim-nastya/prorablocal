@@ -170,6 +170,7 @@ const TemplateModal = ({ show, onClose, templates, onApplyTemplate, onDeleteTemp
 
 
 const EstimateEditor = ({ estimate, projectId, onUpdate, onDelete, directory, setDirectory, onSaveTemplate, templates, onDeleteTemplate }: EstimateEditorProps) => {
+    const [isOpen, setIsOpen] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [showShoppingListModal, setShowShoppingListModal] = useState(false);
     const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -323,7 +324,11 @@ const EstimateEditor = ({ estimate, projectId, onUpdate, onDelete, directory, se
     };
 
     const handleShare = () => {
-        const estimateLink = `${window.location.origin}${window.location.pathname}?view=estimate&projectId=${projectId}&estimateId=${estimate.id}`;
+        let path = window.location.pathname;
+        if (path.endsWith('index.html')) {
+            path = path.substring(0, path.length - 'index.html'.length);
+        }
+        const estimateLink = `${window.location.origin}${path}?view=estimate&projectId=${projectId}&estimateId=${estimate.id}`;
         navigator.clipboard.writeText(estimateLink).then(() => {
             addToast('Ссылка на смету скопирована!', 'success');
         });
@@ -408,109 +413,127 @@ const EstimateEditor = ({ estimate, projectId, onUpdate, onDelete, directory, se
     
     return (
         <div className="card">
-            <div className="estimate-card-header">
+            <div 
+                className="collapsible-header"
+                onClick={() => setIsOpen(!isOpen)} 
+                role="button" 
+                tabIndex={0} 
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setIsOpen(!isOpen)} 
+                aria-expanded={isOpen}
+            >
                 <input 
                     type="text" 
                     value={estimateName} 
                     onChange={(e) => setEstimateName(e.target.value)}
                     onBlur={handleNameChangeOnBlur}
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
                     className="estimate-name-input"
                     aria-label="Название сметы"
                 />
-                <div className="card-header-actions">
-                    <button className="btn btn-primary btn-sm" onClick={openModalForNew}>+ Добавить</button>
-                    <button className="action-btn" onClick={() => setShowTemplateModal(true)} aria-label="Применить шаблон"><TemplateIcon /></button>
-                    <button className="action-btn" onClick={handleSaveAsTemplate} aria-label="Сохранить как шаблон"><SaveTemplateIcon /></button>
-                    <button className="action-btn" onClick={() => setShowShoppingListModal(true)} aria-label="Список покупок"><ShoppingListIcon /></button>
-                    <button className="action-btn" onClick={handleShare} aria-label="Поделиться"><ShareIcon /></button>
-                    <button className="action-btn" onClick={() => onDelete(estimate.id)} aria-label="Удалить смету"><DeleteIcon /></button>
-                </div>
+                <span className="chevron">▼</span>
             </div>
-             {estimate.approvedOn && (
-                <span className="approval-badge">
-                    <CheckIcon />
-                    Согласована клиентом {new Date(estimate.approvedOn).toLocaleDateString('ru-RU')}
-                </span>
-            )}
-            <div className="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Позиция</th>
-                            <th className="align-right">Кол-во</th>
-                            <th className="align-right">Цена</th>
-                            <th className="align-right">Итог</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {estimate.items.length === 0 ? (
-                            <tr><td colSpan={5} style={{textAlign: 'center', padding: '1rem'}}>Позиций пока нет.</td></tr>
-                        ) : (
-                            estimate.items.map((item, index) => (
-                                <tr key={item.id} className="animate-fade-slide-up" style={{ animationDelay: `${index * 50}ms` }}>
-                                    <td>
-                                        <strong>{item.name}</strong>
-                                        <br />
-                                        <small>{item.type}</small>
-                                    </td>
-                                    <td className="align-right">{item.quantity} {item.unit}</td>
-                                    <td className="align-right">{formatCurrency(item.price)}</td>
-                                    <td className="align-right">{formatCurrency(item.quantity * item.price)}</td>
-                                    <td className="align-right">
-                                        <div className="item-actions">
-                                            <button className="action-btn comment-btn" onClick={() => openCommentModal(item)} aria-label="Комментарии">
-                                                <CommentIcon />
-                                                {(item.comments?.length || 0) > 0 && <span className="comment-badge">{item.comments?.length}</span>}
-                                            </button>
-                                            <button className="action-btn" onClick={() => openModalForEdit(item)} aria-label="Редактировать"><EditIcon /></button>
-                                            <button className="action-btn" onClick={() => handleDeleteItem(item.id)} aria-label="Удалить"><DeleteIcon /></button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
-
-            <div className="estimate-summary-container">
-                <div className="discount-controls">
-                    <label>Скидка</label>
-                    <div className="d-flex">
-                        <div className="modal-toggle">
-                            <button className={discountType === 'percent' ? 'active' : ''} onClick={() => { setDiscountType('percent'); handleDiscountChange('percent', discountValue); }}>%</button>
-                            <button className={discountType === 'fixed' ? 'active' : ''} onClick={() => { setDiscountType('fixed'); handleDiscountChange('fixed', discountValue); }}>₽</button>
-                        </div>
-                        <input 
-                            type="number" 
-                            className="discount-input"
-                            value={discountValue} 
-                            placeholder="0"
-                            onChange={(e) => setDiscountValue(e.target.value)}
-                            onBlur={() => handleDiscountChange(discountType, discountValue)}
-                            step={discountType === 'percent' ? '0.1' : '100'}
-                        />
+            
+            {isOpen && (
+            <div className="collapsible-content">
+                <div className="estimate-card-header">
+                    <div/>
+                    <div className="card-header-actions">
+                        <button className="btn btn-primary btn-sm" onClick={openModalForNew}>+ Добавить</button>
+                        <button className="action-btn" onClick={() => setShowTemplateModal(true)} aria-label="Применить шаблон"><TemplateIcon /></button>
+                        <button className="action-btn" onClick={handleSaveAsTemplate} aria-label="Сохранить как шаблон"><SaveTemplateIcon /></button>
+                        <button className="action-btn" onClick={() => setShowShoppingListModal(true)} aria-label="Список покупок"><ShoppingListIcon /></button>
+                        <button className="action-btn" onClick={handleShare} aria-label="Поделиться"><ShareIcon /></button>
+                        <button className="action-btn" onClick={() => onDelete(estimate.id)} aria-label="Удалить смету"><DeleteIcon /></button>
                     </div>
                 </div>
+                 {estimate.approvedOn && (
+                    <span className="approval-badge">
+                        <CheckIcon />
+                        Согласована клиентом {new Date(estimate.approvedOn).toLocaleDateString('ru-RU')}
+                    </span>
+                )}
+                <div className="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Позиция</th>
+                                <th className="align-right">Кол-во</th>
+                                <th className="align-right">Цена</th>
+                                <th className="align-right">Итог</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {estimate.items.length === 0 ? (
+                                <tr><td colSpan={5} style={{textAlign: 'center', padding: '1rem'}}>Позиций пока нет.</td></tr>
+                            ) : (
+                                estimate.items.map((item, index) => (
+                                    <tr key={item.id} className="animate-fade-slide-up" style={{ animationDelay: `${index * 50}ms` }}>
+                                        <td>
+                                            <strong>{item.name}</strong>
+                                            <br />
+                                            <small>{item.type}</small>
+                                        </td>
+                                        <td className="align-right">{item.quantity} {item.unit}</td>
+                                        <td className="align-right">{formatCurrency(item.price)}</td>
+                                        <td className="align-right">{formatCurrency(item.quantity * item.price)}</td>
+                                        <td className="align-right">
+                                            <div className="item-actions">
+                                                <button className="action-btn comment-btn" onClick={() => openCommentModal(item)} aria-label="Комментарии">
+                                                    <CommentIcon />
+                                                    {(item.comments?.length || 0) > 0 && <span className="comment-badge">{item.comments?.length}</span>}
+                                                </button>
+                                                <button className="action-btn" onClick={() => openModalForEdit(item)} aria-label="Редактировать"><EditIcon /></button>
+                                                <button className="action-btn" onClick={() => handleDeleteItem(item.id)} aria-label="Удалить"><DeleteIcon /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
 
-                <div className="estimate-totals">
-                     <div className="total-row">
-                         <span>Подытог</span>
-                         <span>{formatCurrency(subtotal)}</span>
-                     </div>
-                     {discountAmount > 0 && (
-                         <div className="total-row discount-row">
-                             <span>Скидка ({discountType === 'percent' ? `${parsedDiscountValue}%` : formatCurrency(parsedDiscountValue)})</span>
-                             <span>- {formatCurrency(discountAmount)}</span>
+                <div className="estimate-summary-container">
+                    <div className="discount-controls">
+                        <label>Скидка</label>
+                        <div className="d-flex">
+                            <div className="modal-toggle">
+                                <button className={discountType === 'percent' ? 'active' : ''} onClick={() => { setDiscountType('percent'); handleDiscountChange('percent', discountValue); }}>%</button>
+                                <button className={discountType === 'fixed' ? 'active' : ''} onClick={() => { setDiscountType('fixed'); handleDiscountChange('fixed', discountValue); }}>₽</button>
+                            </div>
+                            <input 
+                                type="number" 
+                                className="discount-input"
+                                value={discountValue} 
+                                placeholder="0"
+                                onChange={(e) => setDiscountValue(e.target.value)}
+                                onBlur={() => handleDiscountChange(discountType, discountValue)}
+                                step={discountType === 'percent' ? '0.1' : '100'}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="estimate-totals">
+                         <div className="total-row">
+                             <span>Подытог</span>
+                             <span>{formatCurrency(subtotal)}</span>
                          </div>
-                     )}
-                     <div className="total-row grand-total">
-                         <span>Итого</span>
-                         <span>{formatCurrency(total)}</span>
+                         {discountAmount > 0 && (
+                             <div className="total-row discount-row">
+                                 <span>Скидка ({discountType === 'percent' ? `${parsedDiscountValue}%` : formatCurrency(parsedDiscountValue)})</span>
+                                 <span>- {formatCurrency(discountAmount)}</span>
+                             </div>
+                         )}
+                         <div className="total-row grand-total">
+                             <span>Итого</span>
+                             <span>{formatCurrency(total)}</span>
+                         </div>
                      </div>
-                 </div>
+                </div>
             </div>
+            )}
 
              <Modal show={showModal} onClose={closeModal} title={isEditing ? 'Редактировать позицию' : 'Добавить позицию'}>
                 <form onSubmit={(e: React.FormEvent) => { e.preventDefault(); handleSaveItem(); }}>
@@ -604,6 +627,7 @@ const EstimateEditor = ({ estimate, projectId, onUpdate, onDelete, directory, se
 };
 
 const ExpenseTracker = ({ project, projects, setProjects }: { project: Project, projects: Project[], setProjects: React.Dispatch<React.SetStateAction<Project[]>> }) => {
+    const [isOpen, setIsOpen] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [entryType, setEntryType] = useState<'expense' | 'payment'>('expense');
     const [newEntry, setNewEntry] = useState({ date: new Date().toISOString().split('T')[0], description: '', amount: '' as string | number });
@@ -692,34 +716,50 @@ const ExpenseTracker = ({ project, projects, setProjects }: { project: Project, 
 
     return (
         <div className="card">
-            <div className="d-flex justify-between align-center mb-1">
+            <div 
+                className="collapsible-header"
+                onClick={() => setIsOpen(!isOpen)} 
+                role="button" 
+                tabIndex={0} 
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setIsOpen(!isOpen)} 
+                aria-expanded={isOpen}
+            >
                 <h3>Финансы</h3>
-                 <button className="btn btn-primary btn-sm" onClick={() => setShowModal(true)}>+ Добавить</button>
+                <span className="chevron">▼</span>
             </div>
 
-            {transactions.length === 0 ? (
-                <div className="transaction-list-empty">Операций пока нет.</div>
-            ) : (
-                <div className="transaction-list">
-                    {transactions.map((t, index) => (
-                        <div key={t.id} className="transaction-item animate-fade-slide-up" style={{ animationDelay: `${index * 50}ms` }}>
-                            <div className="transaction-details">
-                                <span className="transaction-description">{t.description}</span>
-                                <span className="transaction-date">{new Date(t.date).toLocaleDateString('ru-RU')}</span>
-                            </div>
-                            <div className="d-flex align-center">
-                                {t.type === 'expense' && t.receipt && (
-                                    <img src={t.receipt} alt="Чек" className="receipt-image" onClick={() => openReceiptPreview(t.receipt!)} />
-                                )}
-                                <span className={`transaction-amount ${t.type}`}>
-                                    {t.type === 'expense' ? '-' : '+'}
-                                    {formatCurrency(t.amount)}
-                                </span>
-                                 <button className="action-btn" onClick={() => handleDeleteTransaction(t.id, t.type)} aria-label="Удалить"><DeleteIcon /></button>
-                            </div>
-                        </div>
-                    ))}
+            {isOpen && (
+            <div className="collapsible-content">
+                <div className="d-flex justify-between align-center mb-1">
+                    <div/>
+                     <button className="btn btn-primary btn-sm" onClick={() => setShowModal(true)}>+ Добавить</button>
                 </div>
+
+                {transactions.length === 0 ? (
+                    <div className="transaction-list-empty">Операций пока нет.</div>
+                ) : (
+                    <div className="transaction-list">
+                        {transactions.map((t, index) => (
+                            <div key={t.id} className="transaction-item animate-fade-slide-up" style={{ animationDelay: `${index * 50}ms` }}>
+                                <div className="transaction-details">
+                                    <span className="transaction-description">{t.description}</span>
+                                    <span className="transaction-date">{new Date(t.date).toLocaleDateString('ru-RU')}</span>
+                                </div>
+                                <div className="d-flex align-center">
+                                    {t.type === 'expense' && t.receipt && (
+                                        <img src={t.receipt} alt="Чек" className="receipt-image" onClick={() => openReceiptPreview(t.receipt!)} />
+                                    )}
+                                    <span className={`transaction-amount ${t.type}`}>
+                                        {t.type === 'expense' ? '-' : '+'}
+                                        {formatCurrency(t.amount)}
+                                    </span>
+                                     <button className="action-btn" onClick={() => handleDeleteTransaction(t.id, t.type)} aria-label="Удалить"><DeleteIcon /></button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
             )}
             
             <Modal show={showModal} onClose={() => !isSaving && setShowModal(false)} title="Добавить операцию">
@@ -765,6 +805,7 @@ const ExpenseTracker = ({ project, projects, setProjects }: { project: Project, 
 };
 
 const PhotoReports = ({ project, projects, setProjects }: { project: Project, projects: Project[], setProjects: React.Dispatch<React.SetStateAction<Project[]>> }) => {
+    const [isOpen, setIsOpen] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [newReport, setNewReport] = useState({ date: new Date().toISOString().split('T')[0], description: '' });
     const [reportFile, setReportFile] = useState<File | null>(null);
@@ -858,27 +899,43 @@ const PhotoReports = ({ project, projects, setProjects }: { project: Project, pr
 
     return (
         <div className="card">
-            <div className="d-flex justify-between align-center mb-1">
+            <div 
+                className="collapsible-header"
+                onClick={() => setIsOpen(!isOpen)} 
+                role="button" 
+                tabIndex={0} 
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setIsOpen(!isOpen)} 
+                aria-expanded={isOpen}
+            >
                 <h3>Фотоотчеты</h3>
-                <button className="btn btn-primary btn-sm" onClick={() => setShowModal(true)}>+ Добавить фото</button>
+                <span className="chevron">▼</span>
             </div>
-            {photoReports.length === 0 ? (
-                <div className="transaction-list-empty">Фотоотчетов пока нет.</div>
-            ) : (
-                <div className="photo-reports-grid">
-                    {photoReports.map((report, index) => (
-                        <div key={report.id} className="photo-report-card" onClick={() => openViewer(index)}>
-                            <img src={report.imageUrl} alt={report.description} />
-                            <div className="photo-report-info">
-                                <p>{report.description}</p>
-                                <small>{new Date(report.date).toLocaleDateString('ru-RU')}</small>
-                            </div>
-                            <button className="photo-report-delete-btn action-btn" onClick={(e) => { e.stopPropagation(); handleDeleteReport(report.id); }} aria-label="Удалить фотоотчет">
-                                <DeleteIcon />
-                            </button>
-                        </div>
-                    ))}
+
+            {isOpen && (
+            <div className="collapsible-content">
+                <div className="d-flex justify-between align-center mb-1">
+                    <div/>
+                    <button className="btn btn-primary btn-sm" onClick={() => setShowModal(true)}>+ Добавить фото</button>
                 </div>
+                {photoReports.length === 0 ? (
+                    <div className="transaction-list-empty">Фотоотчетов пока нет.</div>
+                ) : (
+                    <div className="photo-reports-grid">
+                        {photoReports.map((report, index) => (
+                            <div key={report.id} className="photo-report-card" onClick={() => openViewer(index)}>
+                                <img src={report.imageUrl} alt={report.description} />
+                                <div className="photo-report-info">
+                                    <p>{report.description}</p>
+                                    <small>{new Date(report.date).toLocaleDateString('ru-RU')}</small>
+                                </div>
+                                <button className="photo-report-delete-btn action-btn" onClick={(e) => { e.stopPropagation(); handleDeleteReport(report.id); }} aria-label="Удалить фотоотчет">
+                                    <DeleteIcon />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
             )}
             <Modal show={showModal} onClose={() => !isSaving && setShowModal(false)} title="Добавить фотоотчет">
                 <form onSubmit={handleAddReport}>
@@ -913,6 +970,7 @@ const PhotoReports = ({ project, projects, setProjects }: { project: Project, pr
 };
 
 const ProjectSchedule = ({ project, projects, setProjects }: { project: Project, projects: Project[], setProjects: React.Dispatch<React.SetStateAction<Project[]>> }) => {
+    const [isOpen, setIsOpen] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [newItem, setNewItem] = useState({ name: '', startDate: '', endDate: '' });
     const [isSaving, setIsSaving] = useState(false);
@@ -986,33 +1044,49 @@ const ProjectSchedule = ({ project, projects, setProjects }: { project: Project,
 
     return (
         <div className="card">
-            <div className="d-flex justify-between align-center mb-1">
+            <div 
+                className="collapsible-header"
+                onClick={() => setIsOpen(!isOpen)} 
+                role="button" 
+                tabIndex={0} 
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setIsOpen(!isOpen)} 
+                aria-expanded={isOpen}
+            >
                 <h3>График работ</h3>
-                <button className="btn btn-primary btn-sm" onClick={() => setShowModal(true)}>+ Добавить этап</button>
+                <span className="chevron">▼</span>
             </div>
-            {schedule.length === 0 ? (
-                <div className="transaction-list-empty">Этапы работ пока не добавлены.</div>
-            ) : (
-                <div className="data-list">
-                    {schedule.sort((a,b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()).map(item => (
-                        <div key={item.id} className={`data-item schedule-item ${item.completed ? 'completed' : ''}`}>
-                             <div className="schedule-item-toggle">
-                                <button className="action-btn" onClick={() => toggleItemCompletion(item.id)}>
-                                    {item.completed ? <ReplayIcon /> : <CheckIcon />}
+
+            {isOpen && (
+            <div className="collapsible-content">
+                <div className="d-flex justify-between align-center mb-1">
+                    <div/>
+                    <button className="btn btn-primary btn-sm" onClick={() => setShowModal(true)}>+ Добавить этап</button>
+                </div>
+                {schedule.length === 0 ? (
+                    <div className="transaction-list-empty">Этапы работ пока не добавлены.</div>
+                ) : (
+                    <div className="data-list">
+                        {schedule.sort((a,b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()).map(item => (
+                            <div key={item.id} className={`data-item schedule-item ${item.completed ? 'completed' : ''}`}>
+                                 <div className="schedule-item-toggle">
+                                    <button className="action-btn" onClick={() => toggleItemCompletion(item.id)}>
+                                        {item.completed ? <ReplayIcon /> : <CheckIcon />}
+                                    </button>
+                                </div>
+                                <div className="data-item-info">
+                                    <p><strong>{item.name}</strong></p>
+                                    <span className="data-item-subtext">
+                                        {new Date(item.startDate).toLocaleDateString('ru-RU')} - {new Date(item.endDate).toLocaleDateString('ru-RU')}
+                                    </span>
+                                </div>
+                                <button className="action-btn" onClick={() => handleDeleteItem(item.id)} aria-label="Удалить этап">
+                                    <DeleteIcon />
                                 </button>
                             </div>
-                            <div className="data-item-info">
-                                <p><strong>{item.name}</strong></p>
-                                <span className="data-item-subtext">
-                                    {new Date(item.startDate).toLocaleDateString('ru-RU')} - {new Date(item.endDate).toLocaleDateString('ru-RU')}
-                                </span>
-                            </div>
-                            <button className="action-btn" onClick={() => handleDeleteItem(item.id)} aria-label="Удалить этап">
-                                <DeleteIcon />
-                            </button>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
+            </div>
             )}
              <Modal show={showModal} onClose={() => !isSaving && setShowModal(false)} title="Добавить этап работ">
                 <form onSubmit={handleAddItem}>
@@ -1044,6 +1118,7 @@ const ProjectSchedule = ({ project, projects, setProjects }: { project: Project,
 
 
 const ProjectDocuments = ({ project, projects, setProjects }: { project: Project, projects: Project[], setProjects: React.Dispatch<React.SetStateAction<Project[]>> }) => {
+    const [isOpen, setIsOpen] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [newItem, setNewItem] = useState({ name: '' });
     const [documentFile, setDocumentFile] = useState<File | null>(null);
@@ -1123,27 +1198,43 @@ const ProjectDocuments = ({ project, projects, setProjects }: { project: Project
 
     return (
         <div className="card">
-            <div className="d-flex justify-between align-center mb-1">
+            <div 
+                className="collapsible-header"
+                onClick={() => setIsOpen(!isOpen)} 
+                role="button" 
+                tabIndex={0} 
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setIsOpen(!isOpen)} 
+                aria-expanded={isOpen}
+            >
                 <h3>Документы</h3>
-                <button className="btn btn-primary btn-sm" onClick={() => setShowModal(true)}>+ Загрузить</button>
+                <span className="chevron">▼</span>
             </div>
-            {documents.length === 0 ? (
-                <div className="transaction-list-empty">Документов пока нет.</div>
-            ) : (
-                <div className="data-list">
-                    {documents.map(doc => (
-                        <div key={doc.id} className="data-item">
-                            <div className="data-item-info">
-                                <a href="#" onClick={(e) => { e.preventDefault(); handleDownload(doc.file, doc.fileName); }}>
-                                    {doc.name}
-                                </a>
-                            </div>
-                            <button className="action-btn" onClick={() => handleDeleteItem(doc.id)} aria-label="Удалить документ">
-                                <DeleteIcon />
-                            </button>
-                        </div>
-                    ))}
+
+            {isOpen && (
+            <div className="collapsible-content">
+                <div className="d-flex justify-between align-center mb-1">
+                    <div/>
+                    <button className="btn btn-primary btn-sm" onClick={() => setShowModal(true)}>+ Загрузить</button>
                 </div>
+                {documents.length === 0 ? (
+                    <div className="transaction-list-empty">Документов пока нет.</div>
+                ) : (
+                    <div className="data-list">
+                        {documents.map(doc => (
+                            <div key={doc.id} className="data-item">
+                                <div className="data-item-info">
+                                    <a href="#" onClick={(e) => { e.preventDefault(); handleDownload(doc.file, doc.fileName); }}>
+                                        {doc.name}
+                                    </a>
+                                </div>
+                                <button className="action-btn" onClick={() => handleDeleteItem(doc.id)} aria-label="Удалить документ">
+                                    <DeleteIcon />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
             )}
              <Modal show={showModal} onClose={() => !isSaving && setShowModal(false)} title="Загрузить документ">
                 <form onSubmit={handleAddItem}>
@@ -1168,6 +1259,7 @@ const ProjectDocuments = ({ project, projects, setProjects }: { project: Project
 };
 
 const ProjectNotes = ({ project, projects, setProjects }: { project: Project, projects: Project[], setProjects: React.Dispatch<React.SetStateAction<Project[]>> }) => {
+    const [isOpen, setIsOpen] = useState(false);
     const [newNote, setNewNote] = useState('');
     const { addToast } = useToasts();
     
@@ -1216,33 +1308,48 @@ const ProjectNotes = ({ project, projects, setProjects }: { project: Project, pr
 
     return (
         <div className="card">
-            <h3>Заметки по объекту</h3>
-            {notes.length === 0 ? (
-                <div className="transaction-list-empty">Заметок пока нет.</div>
-            ) : (
-                <div className="data-list">
-                    {notes.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(note => (
-                        <div key={note.id} className="data-item">
-                            <div className="data-item-info">
-                                <p>{note.text}</p>
-                                <span className="data-item-subtext">{new Date(note.createdAt).toLocaleString('ru-RU')}</span>
-                            </div>
-                            <button className="action-btn" onClick={() => handleDeleteNote(note.id)} aria-label="Удалить заметку">
-                                <DeleteIcon />
-                            </button>
+            <div 
+                className="collapsible-header"
+                onClick={() => setIsOpen(!isOpen)} 
+                role="button" 
+                tabIndex={0} 
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setIsOpen(!isOpen)} 
+                aria-expanded={isOpen}
+            >
+                <h3>Заметки по объекту</h3>
+                <span className="chevron">▼</span>
+            </div>
+
+            {isOpen && (
+                <div className="collapsible-content">
+                    {notes.length === 0 ? (
+                        <div className="transaction-list-empty">Заметок пока нет.</div>
+                    ) : (
+                        <div className="data-list">
+                            {notes.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map(note => (
+                                <div key={note.id} className="data-item">
+                                    <div className="data-item-info">
+                                        <p>{note.text}</p>
+                                        <span className="data-item-subtext">{new Date(note.createdAt).toLocaleString('ru-RU')}</span>
+                                    </div>
+                                    <button className="action-btn" onClick={() => handleDeleteNote(note.id)} aria-label="Удалить заметку">
+                                        <DeleteIcon />
+                                    </button>
+                                </div>
+                            ))}
                         </div>
-                    ))}
+                    )}
+                    <form onSubmit={handleAddNote} className="add-note-form">
+                        <input
+                            type="text"
+                            value={newNote}
+                            onChange={(e) => setNewNote(e.target.value)}
+                            placeholder="Новая заметка..."
+                        />
+                        <button type="submit" className="btn btn-primary btn-sm">Добавить</button>
+                    </form>
                 </div>
             )}
-            <form onSubmit={handleAddNote} className="add-note-form">
-                <input
-                    type="text"
-                    value={newNote}
-                    onChange={(e) => setNewNote(e.target.value)}
-                    placeholder="Новая заметка..."
-                />
-                <button type="submit" className="btn btn-primary btn-sm">Добавить</button>
-            </form>
         </div>
     );
 };
