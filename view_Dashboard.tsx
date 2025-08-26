@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { api } from './api';
 import type { DashboardViewProps, ViewState, WorkspaceTask, ProjectScheduleItem } from './types';
 import { generateId, debounce } from './utils';
-import { DeleteIcon, CheckIcon, ReplayIcon, CalendarIcon } from './icons';
+import { DeleteIcon, CalendarIcon } from './icons';
 
 const NotesWidget = ({ notes, setNotes }: { notes: string, setNotes: React.Dispatch<React.SetStateAction<string>> }) => {
     const [localNotes, setLocalNotes] = useState(notes);
