@@ -1,17 +1,12 @@
-// This file provides TypeScript definitions for environment variables
-// to prevent build errors when `tsc` is run.
+// This file provides a global type definition for the `process` object
+// to prevent TypeScript errors during the `tsc` build step. Vite's `define`
+// config makes `process.env.API_KEY` available in the client code, and this
+// declaration makes TypeScript aware of its type.
 
-// By adding this, we tell TypeScript that a global 'process' object exists
-// with an 'env' property, which is what Vite's `define` config simulates.
-// This prevents the "Cannot find name 'process'" error during the tsc build step.
-// FIX: Changed from redeclaring `process` to augmenting `NodeJS.ProcessEnv`.
-declare global {
-  namespace NodeJS {
-    interface ProcessEnv {
-      API_KEY: string;
-    }
+// FIX: Replaced `declare var process` with namespace augmentation to avoid redeclaration errors.
+// This correctly merges the API_KEY type into the existing `process.env` definition.
+declare namespace NodeJS {
+  interface ProcessEnv {
+    API_KEY: string;
   }
 }
-
-// An empty export is needed to treat this file as a module and allow global augmentation.
-export {};

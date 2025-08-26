@@ -66,6 +66,12 @@ export const SmartAddModal = ({ show, onClose, projects, setProjects, workspaceN
             const result = JSON.parse(response.text);
             
             if (result.category === 'expense' && result.data.amount && result.data.description) {
+                const descriptionText = result.data.description;
+                if (typeof descriptionText !== 'string') {
+                    addToast('Получено некорректное описание от AI.', 'error');
+                    return;
+                }
+
                 const projectNameFromAI = result.data.projectName;
                 let targetProject: Project | undefined;
 
@@ -77,10 +83,10 @@ export const SmartAddModal = ({ show, onClose, projects, setProjects, workspaceN
                     const newExpense: Expense = {
                         id: generateId(),
                         date: new Date().toISOString().split('T')[0],
-                        description: result.data.description,
+                        description: descriptionText,
                         amount: result.data.amount,
                     };
-                    const updatedProjects = projects.map(p => p.id === targetProject.id ? { ...p, expenses: [...p.expenses, newExpense] } : p);
+                    const updatedProjects = projects.map(p => p.id === targetProject!.id ? { ...p, expenses: [...p.expenses, newExpense] } : p);
                     setProjects(updatedProjects);
                     await api.saveProjects(updatedProjects);
                     addToast(`Расход добавлен в проект "${targetProject.name}"`, 'success');
@@ -90,9 +96,14 @@ export const SmartAddModal = ({ show, onClose, projects, setProjects, workspaceN
                     addToast(`Проект "${name}" не найден`, 'error');
                 }
             } else if (result.category === 'task' && result.data.taskText) {
+                const taskText = result.data.taskText;
+                if (typeof taskText !== 'string') {
+                    addToast('Получен некорректный текст задачи от AI.', 'error');
+                    return;
+                }
                 const newTask: WorkspaceTask = {
                     id: generateId(),
-                    text: result.data.taskText,
+                    text: taskText,
                     completed: false,
                 };
                 const updatedTasks = [...workspaceTasks, newTask];
@@ -100,7 +111,12 @@ export const SmartAddModal = ({ show, onClose, projects, setProjects, workspaceN
                 await api.saveWorkspaceTasks(updatedTasks);
                 addToast('Новая задача добавлена', 'success');
             } else if (result.category === 'note' && result.data.noteText) {
-                const updatedNotes = `${workspaceNotes}\n- ${result.data.noteText}`.trim();
+                 const noteText = result.data.noteText;
+                 if (typeof noteText !== 'string') {
+                     addToast('Получен некорректный текст заметки от AI.', 'error');
+                     return;
+                 }
+                const updatedNotes = `${workspaceNotes}\n- ${noteText}`.trim();
                 setWorkspaceNotes(updatedNotes);
                 await api.saveWorkspaceNotes(updatedNotes);
                 addToast('Заметка добавлена', 'success');
