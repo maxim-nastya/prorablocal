@@ -1449,12 +1449,17 @@ tbody tr:hover {
 
 @media (max-width: 768px) {
     .app-container {
-        padding-bottom: 86px; /* Space for bottom nav (70px) + margin */
+        padding-bottom: 90px; /* Space for taller bottom nav (74px) + margin (16px) */
     }
 
     .fab {
-        bottom: 86px; /* Adjust FAB position to sit above nav */
+        bottom: 90px; /* Adjust FAB position to sit above new nav height */
         right: var(--space-4); /* Align with container padding */
+    }
+
+    /* Increased padding on smaller buttons for easier tapping */
+    .action-btn {
+        padding: 15px; /* Makes tap target ~48px */
     }
 
     header .header-actions .settings-btn[aria-label="Справочник"],
@@ -1471,7 +1476,7 @@ tbody tr:hover {
         bottom: 0;
         left: 0;
         right: 0;
-        height: 70px; /* A bit taller for touch targets */
+        height: 74px; /* Increased height for better touch experience */
         background-color: hsla(var(--surface), 0.85);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
@@ -1491,7 +1496,7 @@ tbody tr:hover {
         color: hsl(var(--text-secondary));
         flex-grow: 1;
         height: 100%;
-        font-size: 11px; /* Increased for readability */
+        font-size: 12px; /* Increased for better readability */
         gap: var(--space-1); /* 4px */
         cursor: pointer;
         transition: var(--transition-fast);
