@@ -768,11 +768,11 @@ const ExpenseTracker = ({ project, projects, setProjects }: { project: Project, 
         try {
             let updatedProjects;
             if (entryType === 'expense') {
-                let receiptDataUrl: string | undefined = undefined;
+                let receiptUrl: string | undefined = undefined;
                 if (receiptFile) {
-                    receiptDataUrl = await fileToBase64(receiptFile);
+                    receiptUrl = await cacheImage(receiptFile);
                 }
-                const expenseWithId: Expense = { ...newEntry, amount: finalAmount, id: generateId(), receipt: receiptDataUrl };
+                const expenseWithId: Expense = { ...newEntry, amount: finalAmount, id: generateId(), receipt: receiptUrl };
                 updatedProjects = projects.map(p => p.id === project.id ? { ...p, expenses: [...p.expenses, expenseWithId] } : p);
             } else {
                 const paymentWithId: Payment = { id: generateId(), date: newEntry.date, amount: finalAmount };
@@ -795,6 +795,11 @@ const ExpenseTracker = ({ project, projects, setProjects }: { project: Project, 
         if (!window.confirm('Вы уверены, что хотите удалить эту запись?')) return;
         
         try {
+            let expenseToDelete;
+            if (type === 'expense') {
+                expenseToDelete = project.expenses.find(e => e.id === id);
+            }
+
             const updatedProjects = projects.map(p => {
                 if (p.id === project.id) {
                     if (type === 'expense') {
@@ -805,6 +810,11 @@ const ExpenseTracker = ({ project, projects, setProjects }: { project: Project, 
                 }
                 return p;
             });
+
+            if (expenseToDelete && expenseToDelete.receipt) {
+                await deleteCachedImage(expenseToDelete.receipt);
+            }
+
             setProjects(updatedProjects);
             await api.saveProjects(updatedProjects);
             addToast('Запись удалена', 'success');
@@ -947,7 +957,7 @@ const PhotoReports = ({ project, projects, setProjects }: { project: Project, pr
         }
         setIsSaving(true);
         try {
-            const imageUrl = await fileToBase64(reportFile);
+            const imageUrl = await cacheImage(reportFile);
             const reportWithId: PhotoReport = {
                 ...newReport,
                 id: generateId(),
@@ -979,6 +989,8 @@ const PhotoReports = ({ project, projects, setProjects }: { project: Project, pr
         if (!window.confirm('Вы уверены, что хотите удалить этот фотоотчет?')) return;
 
         try {
+            const reportToDelete = (project.photoReports || []).find(r => r.id === reportId);
+
             const updatedProjects = projects.map(p => {
                 if (p.id === project.id) {
                     const updatedReports = (p.photoReports || []).filter(r => r.id !== reportId);
@@ -986,6 +998,10 @@ const PhotoReports = ({ project, projects, setProjects }: { project: Project, pr
                 }
                 return p;
             });
+
+            if (reportToDelete) {
+                await deleteCachedImage(reportToDelete.imageUrl);
+            }
 
             setProjects(updatedProjects);
             await api.saveProjects(updatedProjects);
