@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import type { Project } from './types';
-import { SearchIcon, PlusIcon } from './icons';
+import { SearchIcon } from './icons';
 import { FinancialDashboard } from './view_ProjectDetails';
 
 export const ProjectListView = ({ projects, onSelectProject, onShowNewProjectModal }: { projects: Project[], setProjects: React.Dispatch<React.SetStateAction<Project[]>>, onSelectProject: (projectId: string) => void, onShowNewProjectModal: () => void }) => {
@@ -25,6 +25,7 @@ export const ProjectListView = ({ projects, onSelectProject, onShowNewProjectMod
                     <button className={filter === 'В работе' ? 'active' : ''} onClick={() => setFilter('В работе')}>В работе</button>
                     <button className={filter === 'Завершен' ? 'active' : ''} onClick={() => setFilter('Завершен')}>Завершен</button>
                 </div>
+                {filter === 'В работе' && <button className="btn btn-primary btn-sm" onClick={onShowNewProjectModal}>+ Новый проект</button>}
             </div>
             
             <div className="search-container">
@@ -62,8 +63,6 @@ export const ProjectListView = ({ projects, onSelectProject, onShowNewProjectMod
                     {filter === 'В работе' && !searchTerm && <button className="btn btn-primary" onClick={onShowNewProjectModal}>Создать первый проект</button>}
                 </div>
             )}
-
-            {filter === 'В работе' && <button className="fab" onClick={onShowNewProjectModal} aria-label="Новый проект"><PlusIcon /></button>}
         </>
     );
 };

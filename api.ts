@@ -1,4 +1,4 @@
-import type { User, Project, DirectoryItem, UserProfile, EstimateTemplate, InventoryItem, ProjectNote, Estimate, Comment } from './types';
+import type { User, Project, DirectoryItem, UserProfile, EstimateTemplate, InventoryItem, ProjectNote, Estimate, Comment, WorkspaceTask } from './types';
 import { generateId } from './utils';
 
 // --- Local Storage Database ---
@@ -10,6 +10,8 @@ interface UserData {
     templates: EstimateTemplate[];
     inventory: InventoryItem[];
     inventoryNotes: ProjectNote[];
+    workspaceNotes: string;
+    workspaceTasks: WorkspaceTask[];
 }
 
 interface LocalDB {
@@ -33,6 +35,8 @@ const getInitialUserData = (): UserData => ({
     templates: [],
     inventory: [],
     inventoryNotes: [],
+    workspaceNotes: '',
+    workspaceTasks: [],
 });
 
 const getDb = (): LocalDB => {
@@ -91,7 +95,7 @@ export const api = {
     },
 
     // --- Data Fetching ---
-    async getInitialData(): Promise<{ user: User, projects: Project[], directory: DirectoryItem[], profile: UserProfile, templates: EstimateTemplate[], inventory: InventoryItem[], inventoryNotes: ProjectNote[] }> {
+    async getInitialData(): Promise<{ user: User, projects: Project[], directory: DirectoryItem[], profile: UserProfile, templates: EstimateTemplate[], inventory: InventoryItem[], inventoryNotes: ProjectNote[], workspaceNotes: string, workspaceTasks: WorkspaceTask[] }> {
         if (!currentUserEmail) {
             throw new Error("Authentication error");
         }
@@ -244,6 +248,22 @@ export const api = {
         saveDb(db);
     },
     
+    async saveWorkspaceNotes(notes: string): Promise<void> {
+        if (!currentUserEmail) throw new Error("Not authenticated");
+        const db = getDb();
+        if (!db.data[currentUserEmail]) db.data[currentUserEmail] = getInitialUserData();
+        db.data[currentUserEmail].workspaceNotes = notes;
+        saveDb(db);
+    },
+
+    async saveWorkspaceTasks(tasks: WorkspaceTask[]): Promise<void> {
+        if (!currentUserEmail) throw new Error("Not authenticated");
+        const db = getDb();
+        if (!db.data[currentUserEmail]) db.data[currentUserEmail] = getInitialUserData();
+        db.data[currentUserEmail].workspaceTasks = tasks;
+        saveDb(db);
+    },
+
     async activateSubscription(): Promise<User> {
         if (!currentUserEmail) throw new Error('Not authenticated');
         const db = getDb();

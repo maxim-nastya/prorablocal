@@ -2,6 +2,7 @@
   "name": "Copy of Прораб Локальный",
   "description": "SaaS-приложение для малых строительных и ремонтных бригад для управления проектами, сметами и финансами.",
   "requestFramePermissions": [
-    "camera"
+    "camera",
+    "microphone"
   ]
 }

@@ -7,7 +7,7 @@ import { useLocalStorage } from './hooks';
 import { Loader, ToastProvider, useToasts, Header, BottomNav, TabView } from './components';
 import type {
     User, Project, DirectoryItem, UserProfile, EstimateTemplate,
-    InventoryItem, ProjectNote, ViewState
+    InventoryItem, ProjectNote, ViewState, WorkspaceTask
 } from './types';
 import { AuthScreen } from './view_Auth';
 import { ProjectListView } from './view_ProjectList';
@@ -20,6 +20,8 @@ import { PublicEstimateView } from './view_PublicEstimate';
 import { ProjectFormModal } from './view_ProjectFormModal';
 import { SubscriptionView } from './view_Subscription';
 import { DashboardView } from './view_Dashboard';
+import { SmartAddModal } from './view_SmartAddModal';
+import { MagicIcon } from './icons';
 
 
 // --- PWA Service Worker Registration ---
@@ -46,9 +48,12 @@ const App = () => {
     const [templates, setTemplates] = useState<EstimateTemplate[]>([]);
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
     const [inventoryNotes, setInventoryNotes] = useState<ProjectNote[]>([]);
+    const [workspaceNotes, setWorkspaceNotes] = useState<string>('');
+    const [workspaceTasks, setWorkspaceTasks] = useState<WorkspaceTask[]>([]);
 
     const [currentView, setCurrentView] = useState<ViewState>({ view: 'dashboard' });
     const [showProjectModal, setShowProjectModal] = useState(false);
+    const [showSmartAddModal, setShowSmartAddModal] = useState(false);
     
     const { addToast } = useToasts();
     
@@ -68,6 +73,8 @@ const App = () => {
                     setTemplates(data.templates);
                     setInventory(data.inventory);
                     setInventoryNotes(data.inventoryNotes);
+                    setWorkspaceNotes(data.workspaceNotes);
+                    setWorkspaceTasks(data.workspaceTasks);
                 } catch (error) {
                     addToast('Не удалось загрузить данные. Возможно, сессия истекла.', 'error');
                     handleLogout(); // Clear stale token
@@ -181,7 +188,14 @@ const App = () => {
     const renderContent = () => {
         switch (currentView.view) {
             case 'dashboard':
-                return <DashboardView projects={projects} setCurrentView={setCurrentView} />;
+                return <DashboardView 
+                            projects={projects} 
+                            setCurrentView={setCurrentView}
+                            workspaceNotes={workspaceNotes}
+                            setWorkspaceNotes={setWorkspaceNotes}
+                            workspaceTasks={workspaceTasks}
+                            setWorkspaceTasks={setWorkspaceTasks}
+                        />;
             case 'projects':
                 return <ProjectListView projects={projects} setProjects={setProjects} onSelectProject={(id) => setCurrentView({ view: 'project_details', projectId: id })} onShowNewProjectModal={() => setShowProjectModal(true)} />;
             case 'project_details': {
@@ -232,6 +246,20 @@ const App = () => {
                 show={showProjectModal}
                 onClose={() => setShowProjectModal(false)}
                 onSave={handleSaveProject}
+            />
+            <button className="fab" onClick={() => setShowSmartAddModal(true)} aria-label="Умное добавление">
+                <MagicIcon /> 
+            </button>
+            <SmartAddModal
+                show={showSmartAddModal}
+                onClose={() => setShowSmartAddModal(false)}
+                projects={projects}
+                setProjects={setProjects}
+                workspaceNotes={workspaceNotes}
+                setWorkspaceNotes={setWorkspaceNotes}
+                workspaceTasks={workspaceTasks}
+                setWorkspaceTasks={setWorkspaceTasks}
+                setCurrentView={setCurrentView}
             />
         </>
     );

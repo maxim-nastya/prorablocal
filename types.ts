@@ -111,6 +111,12 @@ export interface ProjectNote {
     createdAt: string;
 }
 
+export interface WorkspaceTask {
+    id: string;
+    text: string;
+    completed: boolean;
+}
+
 export interface Project {
     id: string;
     name: string;
@@ -157,6 +163,10 @@ export type ViewState =
 export interface DashboardViewProps {
     projects: Project[];
     setCurrentView: (view: ViewState) => void;
+    workspaceNotes: string;
+    setWorkspaceNotes: React.Dispatch<React.SetStateAction<string>>;
+    workspaceTasks: WorkspaceTask[];
+    setWorkspaceTasks: React.Dispatch<React.SetStateAction<WorkspaceTask[]>>;
 }
 
 export interface ProjectDetailsViewProps {
