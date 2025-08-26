@@ -18,6 +18,18 @@ interface SmartAddModalProps {
     setCurrentView: (view: ViewState) => void;
 }
 
+// Define a type for the expected AI response to improve type safety
+interface GeminiSmartAddResponse {
+    category: 'expense' | 'task' | 'note';
+    data: {
+        amount?: number;
+        description?: string;
+        projectName?: string;
+        taskText?: string;
+        noteText?: string;
+    };
+}
+
 const responseSchema = {
     type: Type.OBJECT,
     properties: {
@@ -63,70 +75,72 @@ export const SmartAddModal = ({ show, onClose, projects, setProjects, workspaceN
                 }
             });
 
-            const result = JSON.parse(response.text);
+            const result: GeminiSmartAddResponse = JSON.parse(response.text);
+
+            if (!result || typeof result.category !== 'string' || !result.data) {
+                addToast('Получен некорректный ответ от AI.', 'error');
+                return;
+            }
             
-            if (result.category === 'expense' && result.data.amount && result.data.description) {
-                const descriptionText = result.data.description;
-                if (typeof descriptionText !== 'string') {
-                    addToast('Получено некорректное описание от AI.', 'error');
-                    return;
-                }
+            if (result.category === 'expense') {
+                const { amount, description, projectName } = result.data;
+                if (typeof amount === 'number' && typeof description === 'string') {
+                    let targetProject: Project | undefined;
+                    if (typeof projectName === 'string' && projectName) {
+                        targetProject = projects.find(p => p.name.toLowerCase() === projectName.toLowerCase());
+                    }
 
-                const projectNameFromAI = result.data.projectName;
-                let targetProject: Project | undefined;
-
-                if (projectNameFromAI) {
-                    targetProject = projects.find(p => p.name.toLowerCase() === projectNameFromAI.toLowerCase());
-                }
-
-                if (targetProject) {
-                    const newExpense: Expense = {
-                        id: generateId(),
-                        date: new Date().toISOString().split('T')[0],
-                        description: descriptionText,
-                        amount: result.data.amount,
-                    };
-                    const updatedProjects = projects.map(p => p.id === targetProject!.id ? { ...p, expenses: [...p.expenses, newExpense] } : p);
-                    setProjects(updatedProjects);
-                    await api.saveProjects(updatedProjects);
-                    addToast(`Расход добавлен в проект "${targetProject.name}"`, 'success');
-                    setCurrentView({ view: 'project_details', projectId: targetProject.id });
+                    if (targetProject) {
+                        const newExpense: Expense = {
+                            id: generateId(),
+                            date: new Date().toISOString().split('T')[0],
+                            description: description,
+                            amount: amount,
+                        };
+                        const updatedProjects = projects.map(p => p.id === targetProject!.id ? { ...p, expenses: [...p.expenses, newExpense] } : p);
+                        setProjects(updatedProjects);
+                        await api.saveProjects(updatedProjects);
+                        addToast(`Расход добавлен в проект "${targetProject.name}"`, 'success');
+                        setCurrentView({ view: 'project_details', projectId: targetProject.id });
+                    } else {
+                        const name = projectName || 'не указан';
+                        addToast(`Проект "${name}" не найден`, 'error');
+                    }
                 } else {
-                    const name = projectNameFromAI || 'не указан';
-                    addToast(`Проект "${name}" не найден`, 'error');
+                    addToast('AI не вернул достаточно данных для добавления расхода.', 'error');
                 }
-            } else if (result.category === 'task' && result.data.taskText) {
-                const taskText = result.data.taskText;
-                if (typeof taskText !== 'string') {
-                    addToast('Получен некорректный текст задачи от AI.', 'error');
-                    return;
+            } else if (result.category === 'task') {
+                const { taskText } = result.data;
+                if (typeof taskText === 'string' && taskText) {
+                    const newTask: WorkspaceTask = {
+                        id: generateId(),
+                        text: taskText,
+                        completed: false,
+                    };
+                    const updatedTasks = [...workspaceTasks, newTask];
+                    setWorkspaceTasks(updatedTasks);
+                    await api.saveWorkspaceTasks(updatedTasks);
+                    addToast('Новая задача добавлена', 'success');
+                } else {
+                    addToast('AI не вернул текст для задачи.', 'error');
                 }
-                const newTask: WorkspaceTask = {
-                    id: generateId(),
-                    text: taskText,
-                    completed: false,
-                };
-                const updatedTasks = [...workspaceTasks, newTask];
-                setWorkspaceTasks(updatedTasks);
-                await api.saveWorkspaceTasks(updatedTasks);
-                addToast('Новая задача добавлена', 'success');
-            } else if (result.category === 'note' && result.data.noteText) {
-                 const noteText = result.data.noteText;
-                 if (typeof noteText !== 'string') {
-                     addToast('Получен некорректный текст заметки от AI.', 'error');
-                     return;
+            } else if (result.category === 'note') {
+                 const { noteText } = result.data;
+                 if (typeof noteText === 'string' && noteText) {
+                    const updatedNotes = `${workspaceNotes}\n- ${noteText}`.trim();
+                    setWorkspaceNotes(updatedNotes);
+                    await api.saveWorkspaceNotes(updatedNotes);
+                    addToast('Заметка добавлена', 'success');
+                 } else {
+                    addToast('AI не вернул текст для заметки.', 'error');
                  }
-                const updatedNotes = `${workspaceNotes}\n- ${noteText}`.trim();
-                setWorkspaceNotes(updatedNotes);
-                await api.saveWorkspaceNotes(updatedNotes);
-                addToast('Заметка добавлена', 'success');
             } else {
                 addToast('Не удалось распознать команду. Попробуйте переформулировать.', 'error');
             }
             onClose();
 
         } catch (error) {
-            console.error("Gemini API Error:", error);
+            console.error("Gemini API Error or JSON parse error:", error);
             addToast('Ошибка при обработке запроса. Пожалуйста, попробуйте еще раз.', 'error');
         } finally {
             setIsLoading(false);

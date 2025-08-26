@@ -3,8 +3,10 @@
 // config makes `process.env.API_KEY` available in the client code, and this
 // declaration makes TypeScript aware of its type.
 
-// FIX: Replaced `declare var process` with namespace augmentation to avoid redeclaration errors.
-// This correctly merges the API_KEY type into the existing `process.env` definition.
+// FIX: To avoid the "Cannot redeclare block-scoped variable 'process'" error,
+// this file is updated to augment the existing NodeJS.ProcessEnv interface instead of
+// redeclaring the global 'process' variable. This is a common and safe fix for
+// type conflicts when @types/node is present in the project.
 declare namespace NodeJS {
   interface ProcessEnv {
     API_KEY: string;
