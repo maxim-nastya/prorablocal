@@ -51,7 +51,8 @@ export const SmartAddModal = ({ show, onClose, projects, setProjects, workspaceN
         setIsLoading(true);
 
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+            // FIX: Removed redundant 'as string' cast. The type is correctly defined in env.d.ts.
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const projectNames = projects.map(p => p.name).join(', ');
 
             const response = await ai.models.generateContent({
@@ -67,9 +68,11 @@ export const SmartAddModal = ({ show, onClose, projects, setProjects, workspaceN
             
             if (result.category === 'expense' && result.data.amount && result.data.description) {
                 const projectNameFromAI = result.data.projectName;
-                const targetProject = projectNameFromAI
-                    ? projects.find(p => p.name.toLowerCase() === projectNameFromAI.toLowerCase())
-                    : undefined;
+                let targetProject: Project | undefined;
+
+                if (projectNameFromAI) {
+                    targetProject = projects.find(p => p.name.toLowerCase() === projectNameFromAI.toLowerCase());
+                }
 
                 if (targetProject) {
                     const newExpense: Expense = {
