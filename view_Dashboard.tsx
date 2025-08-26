@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import type { DashboardViewProps, Project, ViewState } from './types';
+import { useMemo } from 'react';
+import type { DashboardViewProps, ViewState } from './types';
 import { formatCurrency } from './utils';
 import { CalendarIcon } from './icons';
 

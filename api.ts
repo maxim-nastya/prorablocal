@@ -1,4 +1,4 @@
-import type { User, Project, DirectoryItem, UserProfile, EstimateTemplate, InventoryItem, ProjectNote, Estimate, Comment, PhotoReport } from './types';
+import type { User, Project, DirectoryItem, UserProfile, EstimateTemplate, InventoryItem, ProjectNote, Estimate, Comment } from './types';
 import { generateId } from './utils';
 
 // --- Local Storage Database ---

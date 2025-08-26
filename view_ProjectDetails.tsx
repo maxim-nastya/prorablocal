@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { api } from './api';
 import { useToasts, Loader, Modal, PhotoViewerModal } from './components';
 import { formatCurrency, generateId, fileToBase64, cacheImage, deleteCachedImage } from './utils';
@@ -68,7 +68,7 @@ export const FinancialDashboard = ({ project, variant = 'full' }: { project: Pro
     );
 };
 
-const CommentModal = ({ show, onClose, item, onAddComment, author }: { show: boolean, onClose: () => void, item: { id: string, name: string, comments?: Comment[] } | null, onAddComment: (itemId: string, commentText: string) => void, author: 'Исполнитель' | 'Клиент' }) => {
+const CommentModal = ({ show, onClose, item, onAddComment }: { show: boolean, onClose: () => void, item: { id: string, name: string, comments?: Comment[] } | null, onAddComment: (itemId: string, commentText: string) => void }) => {
     const [newComment, setNewComment] = useState('');
     
     if (!item) return null;
@@ -776,7 +776,6 @@ const EstimateEditor = ({ estimate, projectId, onUpdate, onDelete, directory, se
                 onClose={() => setShowCommentModal(false)}
                 item={commentingItem}
                 onAddComment={handleAddComment}
-                author="Исполнитель"
             />
             <TemplateModal
                 show={showTemplateModal}
@@ -1181,7 +1180,6 @@ const PhotoReports = ({ project, projects, setProjects }: { project: Project, pr
                 onClose={() => setShowCommentModal(false)}
                 item={commentingPhoto ? { id: commentingPhoto.id, name: commentingPhoto.description, comments: commentingPhoto.comments } : null}
                 onAddComment={handleAddComment}
-                author="Исполнитель"
             />
         </div>
     );
