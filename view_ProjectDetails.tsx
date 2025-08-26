@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { api } from './api';
 import { useToasts, Loader, Modal, PhotoViewerModal } from './components';
-import { formatCurrency, generateId, fileToBase64 } from './utils';
+import { formatCurrency, generateId, fileToBase64, cacheImage, deleteCachedImage } from './utils';
 import type {
     Project, Estimate, EstimateItem, DirectoryItem, EstimateTemplate, Discount,
     Comment, FormEstimateItem, Expense, Payment, PhotoReport, ProjectScheduleItem,
@@ -793,11 +793,11 @@ const PhotoReports = ({ project, projects, setProjects }: { project: Project, pr
         }
         setIsSaving(true);
         try {
-            const imageDataUrl = await fileToBase64(reportFile);
+            const imageUrl = await cacheImage(reportFile);
             const reportWithId: PhotoReport = {
                 ...newReport,
                 id: generateId(),
-                image: imageDataUrl,
+                imageUrl: imageUrl,
             };
 
             const updatedProjects = projects.map(p => {
@@ -825,13 +825,23 @@ const PhotoReports = ({ project, projects, setProjects }: { project: Project, pr
         if (!window.confirm('Вы уверены, что хотите удалить этот фотоотчет?')) return;
 
         try {
+            let imageUrlToDelete: string | null = null;
             const updatedProjects = projects.map(p => {
                 if (p.id === project.id) {
+                    const report = (p.photoReports || []).find(r => r.id === reportId);
+                    if (report) {
+                        imageUrlToDelete = report.imageUrl;
+                    }
                     const updatedReports = (p.photoReports || []).filter(r => r.id !== reportId);
                     return { ...p, photoReports: updatedReports };
                 }
                 return p;
             });
+
+            if (imageUrlToDelete) {
+                await deleteCachedImage(imageUrlToDelete);
+            }
+
             setProjects(updatedProjects);
             await api.saveProjects(updatedProjects);
             addToast('Фотоотчет удален', 'success');
@@ -858,7 +868,7 @@ const PhotoReports = ({ project, projects, setProjects }: { project: Project, pr
                 <div className="photo-reports-grid">
                     {photoReports.map((report, index) => (
                         <div key={report.id} className="photo-report-card" onClick={() => openViewer(index)}>
-                            <img src={report.image} alt={report.description} />
+                            <img src={report.imageUrl} alt={report.description} />
                             <div className="photo-report-info">
                                 <p>{report.description}</p>
                                 <small>{new Date(report.date).toLocaleDateString('ru-RU')}</small>
@@ -1259,6 +1269,13 @@ export const ProjectDetailsView = ({ project, projects, setProjects, onBack, dir
     const handleDeleteProject = async () => {
         if (window.confirm('Вы уверены, что хотите удалить этот проект? Это действие нельзя отменить.')) {
             try {
+                // Also delete all cached images for this project
+                if (project.photoReports) {
+                    for (const report of project.photoReports) {
+                        await deleteCachedImage(report.imageUrl);
+                    }
+                }
+
                 const updatedProjects = projects.filter(p => p.id !== project.id);
                 setProjects(updatedProjects);
                 await api.saveProjects(updatedProjects);

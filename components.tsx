@@ -122,7 +122,7 @@ export const PhotoViewerModal = ({ show, onClose, images, startIndex }: PhotoVie
             <button className="photo-viewer-close-btn" aria-label="Закрыть" onClick={onClose}>&times;</button>
             <button className="photo-viewer-nav-btn prev" aria-label="Предыдущее фото" onClick={(e) => { e.stopPropagation(); goToPrevious(); }}>&#10094;</button>
             <div className="photo-viewer-content" onClick={(e) => e.stopPropagation()}>
-                <img src={currentImage.image} alt={currentImage.description} />
+                <img src={currentImage.imageUrl} alt={currentImage.description} />
                 {currentImage.description && <p className="photo-viewer-description">{currentImage.description}</p>}
             </div>
             <button className="photo-viewer-nav-btn next" aria-label="Следующее фото" onClick={(e) => { e.stopPropagation(); goToNext(); }}>&#10095;</button>

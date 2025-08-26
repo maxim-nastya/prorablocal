@@ -1,4 +1,5 @@
-const CACHE_NAME = 'prorab-cache-v8.0'; // Version bumped to force update
+const CACHE_NAME = 'prorab-cache-v8.1'; // Version bumped to force update
+const IMAGE_CACHE_NAME = 'prorab-image-cache-v1';
 const APP_SHELL_URL = './index.html';
 const urlsToCache = [
   './',
@@ -21,7 +22,7 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
+  const cacheWhitelist = [CACHE_NAME, IMAGE_CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => Promise.all(
       cacheNames.map(cacheName => {
@@ -34,6 +35,17 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+  // Handle cached images first. These are user-uploaded and only exist in the cache.
+  if (event.request.url.includes('/cached-images/')) {
+    event.respondWith(
+      caches.match(event.request).then(cachedResponse => {
+        // Return the cached response if found, otherwise a 404.
+        return cachedResponse || new Response('Image not found in cache', { status: 404 });
+      })
+    );
+    return;
+  }
+  
   // For navigation requests, use a network-first strategy to get the latest shell,
   // but fall back to the cached shell if offline.
   if (event.request.mode === 'navigate') {
@@ -46,7 +58,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // For all other requests (assets like JS, CSS, images), use a cache-first strategy.
+  // For all other requests (assets like JS, CSS), use a cache-first strategy.
   event.respondWith(
     caches.match(event.request)
       .then(response => {

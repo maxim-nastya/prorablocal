@@ -217,7 +217,7 @@ export const PublicEstimateView = () => {
                     <div className="photo-reports-grid public-view">
                          {(project.photoReports || []).map(report => (
                             <div key={report.id} className="photo-report-card-public">
-                                <img src={report.image} alt={report.description} />
+                                <img src={report.imageUrl} alt={report.description} />
                                 <div className="photo-report-info-public">
                                     <p>{report.description}</p>
                                     <small>{new Date(report.date).toLocaleDateString('ru-RU')}</small>

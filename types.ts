@@ -80,7 +80,7 @@ export interface PhotoReport {
     id: string;
     date: string;
     description: string;
-    image: string; // base64 data URL
+    imageUrl: string; // URL to cached image
 }
 
 export interface ProjectScheduleItem {
