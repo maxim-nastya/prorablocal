@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import type { DirectoryItem } from './types';
 import { EditIcon, DeleteIcon, SearchIcon } from './icons';
-import { formatCurrency } from './utils';
+import { formatCurrency, generateId } from './utils';
 import { useToasts, Modal, Loader } from './components';
 import { api } from './api';
 
-const DirectoryEditModal = ({ 
+const DirectoryItemModal = ({ 
     show, 
     onClose, 
     item, 
@@ -20,10 +20,14 @@ const DirectoryEditModal = ({
     const [isSaving, setIsSaving] = useState(false);
 
     React.useEffect(() => {
-        if (item) {
-            setItemData(item);
+        if (show) {
+            if (item) {
+                setItemData(item);
+            } else {
+                setItemData({ name: '', type: 'Работа', unit: 'шт', price: 0 });
+            }
         }
-    }, [item]);
+    }, [item, show]);
 
     const handleSave = async (e: React.FormEvent) => {
         setIsSaving(true);
@@ -31,10 +35,10 @@ const DirectoryEditModal = ({
         setIsSaving(false);
     };
 
-    if (!item) return null;
+    const title = item ? "Редактировать позицию" : "Добавить в справочник";
 
     return (
-        <Modal show={show} onClose={onClose} title="Редактировать справочник">
+        <Modal show={show} onClose={onClose} title={title}>
             <form onSubmit={handleSave}>
                 <div className="form-group">
                     <label>Наименование</label>
@@ -60,7 +64,7 @@ const DirectoryEditModal = ({
                 <div className="form-actions">
                     <button type="button" className="btn btn-secondary" onClick={onClose} disabled={isSaving}>Отмена</button>
                     <button type="submit" className="btn btn-primary" disabled={isSaving}>
-                        {isSaving ? <Loader /> : 'Сохранить'}
+                        {isSaving ? <Loader /> : (item ? 'Сохранить' : 'Добавить')}
                     </button>
                 </div>
             </form>
@@ -71,7 +75,8 @@ const DirectoryEditModal = ({
 
 export const DirectoryView = ({ directory, setDirectory }: { directory: DirectoryItem[], setDirectory: React.Dispatch<React.SetStateAction<DirectoryItem[]>> }) => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [editingItem, setEditingItem] = useState<DirectoryItem | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [currentItem, setCurrentItem] = useState<DirectoryItem | null>(null);
     const { addToast } = useToasts();
     
     const filteredDirectory = useMemo(() => {
@@ -83,6 +88,16 @@ export const DirectoryView = ({ directory, setDirectory }: { directory: Director
             item.name.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [directory, searchTerm]);
+    
+    const handleOpenAddModal = () => {
+        setCurrentItem(null);
+        setIsModalOpen(true);
+    };
+
+    const handleOpenEditModal = (item: DirectoryItem) => {
+        setCurrentItem(item);
+        setIsModalOpen(true);
+    };
 
     const handleDeleteItem = async (itemId: string) => {
         if (window.confirm('Вы уверены, что хотите удалить эту позицию из справочника?')) {
@@ -104,14 +119,22 @@ export const DirectoryView = ({ directory, setDirectory }: { directory: Director
             addToast('Название не может быть пустым', 'error');
             return;
         }
-        if (!editingItem) return;
 
         try {
-            const updatedDirectory = directory.map(item => item.id === editingItem.id ? { ...item, ...itemData, name: trimmedName } : item);
+            let updatedDirectory;
+            let toastMessage;
+            if (currentItem) { // Editing existing item
+                updatedDirectory = directory.map(item => item.id === currentItem.id ? { ...item, ...itemData, name: trimmedName } : item);
+                toastMessage = 'Справочник обновлен';
+            } else { // Creating new item
+                const newItem: DirectoryItem = { id: generateId(), ...itemData, name: trimmedName };
+                updatedDirectory = [newItem, ...directory];
+                toastMessage = 'Позиция добавлена';
+            }
             setDirectory(updatedDirectory);
             await api.saveDirectory(updatedDirectory);
-            addToast('Справочник обновлен', 'success');
-            setEditingItem(null);
+            addToast(toastMessage, 'success');
+            setIsModalOpen(false);
         } catch (e) {
             addToast('Не удалось сохранить', 'error');
         }
@@ -120,7 +143,11 @@ export const DirectoryView = ({ directory, setDirectory }: { directory: Director
     return (
          <>
             <div className="card">
-                <h3>Справочник</h3>
+                <div className="d-flex justify-between align-center mb-1">
+                    <h3>Справочник</h3>
+                    <button className="btn btn-primary btn-sm" onClick={handleOpenAddModal}>+ Добавить позицию</button>
+                </div>
+
                 <p className="field-hint">Здесь хранятся все работы и материалы, которые вы добавляли в сметы. Вы можете управлять ими централизованно.</p>
                 
                 <div className="search-container">
@@ -161,7 +188,7 @@ export const DirectoryView = ({ directory, setDirectory }: { directory: Director
                                         <td className="align-right">{item.unit}</td>
                                         <td className="align-right">
                                             <div className="item-actions">
-                                                <button className="action-btn" onClick={() => setEditingItem(item)} aria-label="Редактировать"><EditIcon /></button>
+                                                <button className="action-btn" onClick={() => handleOpenEditModal(item)} aria-label="Редактировать"><EditIcon /></button>
                                                 <button className="action-btn" onClick={() => handleDeleteItem(item.id)} aria-label="Удалить"><DeleteIcon /></button>
                                             </div>
                                         </td>
@@ -172,10 +199,10 @@ export const DirectoryView = ({ directory, setDirectory }: { directory: Director
                     </table>
                 </div>
             </div>
-            <DirectoryEditModal 
-                show={!!editingItem}
-                onClose={() => setEditingItem(null)}
-                item={editingItem}
+            <DirectoryItemModal 
+                show={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                item={currentItem}
                 onSave={handleSaveItem}
             />
         </>
