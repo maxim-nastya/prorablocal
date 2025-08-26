@@ -66,7 +66,11 @@ export const SmartAddModal = ({ show, onClose, projects, setProjects, workspaceN
             const result = JSON.parse(response.text);
             
             if (result.category === 'expense' && result.data.amount && result.data.description) {
-                const targetProject = projects.find(p => result.data.projectName && p.name.toLowerCase() === result.data.projectName.toLowerCase());
+                const projectNameFromAI = result.data.projectName;
+                const targetProject = projectNameFromAI
+                    ? projects.find(p => p.name.toLowerCase() === projectNameFromAI.toLowerCase())
+                    : undefined;
+
                 if (targetProject) {
                     const newExpense: Expense = {
                         id: generateId(),
@@ -80,7 +84,7 @@ export const SmartAddModal = ({ show, onClose, projects, setProjects, workspaceN
                     addToast(`Расход добавлен в проект "${targetProject.name}"`, 'success');
                     setCurrentView({ view: 'project_details', projectId: targetProject.id });
                 } else {
-                    addToast(`Проект "${result.data.projectName || ''}" не найден`, 'error');
+                    addToast(`Проект "${projectNameFromAI || 'не указан'}" не найден`, 'error');
                 }
             } else if (result.category === 'task' && result.data.taskText) {
                 const newTask: WorkspaceTask = {
