@@ -57,28 +57,6 @@ export const setToken = (newToken: string | null) => {
     currentUserEmail = newToken;
 };
 
-const getCurrentUserData = (): UserData => {
-    if (!currentUserEmail) {
-        throw new Error("User not authenticated for data access");
-    }
-    const db = getDb();
-    if (!db.data[currentUserEmail]) {
-        db.data[currentUserEmail] = getInitialUserData();
-        saveDb(db);
-    }
-    return db.data[currentUserEmail];
-};
-
-const saveCurrentUserData = (userData: UserData) => {
-    if (!currentUserEmail) {
-        throw new Error("User not authenticated for data access");
-    }
-    const db = getDb();
-    db.data[currentUserEmail] = userData;
-    saveDb(db);
-};
-
-
 // --- API Implementation ---
 
 export const api = {
@@ -123,7 +101,7 @@ export const api = {
             throw new Error("User not found");
         }
 
-        const userData = getCurrentUserData();
+        const userData = db.data[currentUserEmail] || getInitialUserData();
         return { user, ...userData };
     },
     
@@ -190,41 +168,53 @@ export const api = {
         throw new Error('Could not add comment: item not found');
     },
 
-    // --- Data Saving ---
+    // --- Data Saving (FIXED to be atomic) ---
     async saveProjects(data: Project[]): Promise<void> {
-        const userData = getCurrentUserData();
-        userData.projects = data;
-        saveCurrentUserData(userData);
+        if (!currentUserEmail) throw new Error("Not authenticated");
+        const db = getDb();
+        if (!db.data[currentUserEmail]) db.data[currentUserEmail] = getInitialUserData();
+        db.data[currentUserEmail].projects = data;
+        saveDb(db);
     },
 
     async saveDirectory(data: DirectoryItem[]): Promise<void> {
-        const userData = getCurrentUserData();
-        userData.directory = data;
-        saveCurrentUserData(userData);
+        if (!currentUserEmail) throw new Error("Not authenticated");
+        const db = getDb();
+        if (!db.data[currentUserEmail]) db.data[currentUserEmail] = getInitialUserData();
+        db.data[currentUserEmail].directory = data;
+        saveDb(db);
     },
 
     async saveProfile(data: UserProfile): Promise<void> {
-        const userData = getCurrentUserData();
-        userData.profile = data;
-        saveCurrentUserData(userData);
+        if (!currentUserEmail) throw new Error("Not authenticated");
+        const db = getDb();
+        if (!db.data[currentUserEmail]) db.data[currentUserEmail] = getInitialUserData();
+        db.data[currentUserEmail].profile = data;
+        saveDb(db);
     },
 
     async saveTemplates(data: EstimateTemplate[]): Promise<void> {
-        const userData = getCurrentUserData();
-        userData.templates = data;
-        saveCurrentUserData(userData);
+        if (!currentUserEmail) throw new Error("Not authenticated");
+        const db = getDb();
+        if (!db.data[currentUserEmail]) db.data[currentUserEmail] = getInitialUserData();
+        db.data[currentUserEmail].templates = data;
+        saveDb(db);
     },
 
     async saveInventory(data: InventoryItem[]): Promise<void> {
-        const userData = getCurrentUserData();
-        userData.inventory = data;
-        saveCurrentUserData(userData);
+        if (!currentUserEmail) throw new Error("Not authenticated");
+        const db = getDb();
+        if (!db.data[currentUserEmail]) db.data[currentUserEmail] = getInitialUserData();
+        db.data[currentUserEmail].inventory = data;
+        saveDb(db);
     },
     
     async saveInventoryNotes(data: ProjectNote[]): Promise<void> {
-        const userData = getCurrentUserData();
-        userData.inventoryNotes = data;
-        saveCurrentUserData(userData);
+        if (!currentUserEmail) throw new Error("Not authenticated");
+        const db = getDb();
+        if (!db.data[currentUserEmail]) db.data[currentUserEmail] = getInitialUserData();
+        db.data[currentUserEmail].inventoryNotes = data;
+        saveDb(db);
     },
     
     async activateSubscription(): Promise<User> {

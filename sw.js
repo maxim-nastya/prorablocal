@@ -1,4 +1,4 @@
-const CACHE_NAME = 'prorab-cache-v8.1'; // Version bumped to force update
+const CACHE_NAME = 'prorab-cache-v9'; // Version bumped to force update
 const IMAGE_CACHE_NAME = 'prorab-image-cache-v1';
 const APP_SHELL_URL = './index.html';
 const urlsToCache = [
@@ -34,51 +34,50 @@ self.addEventListener('activate', event => {
   );
 });
 
+// Refactored fetch handler for clarity and robustness
 self.addEventListener('fetch', event => {
-  // Handle cached images first. These are user-uploaded and only exist in the cache.
-  if (event.request.url.includes('/cached-images/')) {
-    event.respondWith(
-      caches.open(IMAGE_CACHE_NAME).then(cache => {
-        return cache.match(event.request).then(cachedResponse => {
-          // Return the cached response if found, otherwise a 404.
-          return cachedResponse || new Response('Image not found in cache', { status: 404 });
-        });
-      })
-    );
-    return;
-  }
-  
-  // For navigation requests, use a network-first strategy to get the latest shell,
-  // but fall back to the cached shell if offline.
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        // Network failed, serve the cached app shell.
-        return caches.match(APP_SHELL_URL);
-      })
-    );
-    return;
-  }
+  event.respondWith((async () => {
+    const { request } = event;
+    const url = new URL(request.url);
 
-  // For all other requests (assets like JS, CSS), use a cache-first strategy.
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // If the resource is in the cache, serve it.
-        if (response) {
-          return response;
+    // Strategy 1: User-uploaded images (Cache only)
+    if (url.pathname.startsWith('/cached-images/')) {
+      const imageCache = await caches.open(IMAGE_CACHE_NAME);
+      const cachedResponse = await imageCache.match(request);
+      // Images must be in the cache. If not, returning undefined will result in a network error.
+      return cachedResponse;
+    }
+
+    // Strategy 2: Navigation requests (Network first, cache fallback)
+    if (request.mode === 'navigate') {
+      try {
+        return await fetch(request);
+      } catch (error) {
+        // Network failed, fall back to the app shell from the cache.
+        const appCache = await caches.open(CACHE_NAME);
+        return await appCache.match(APP_SHELL_URL);
+      }
+    }
+
+    // Strategy 3: Other assets (Cache first, network fallback)
+    try {
+        const appCache = await caches.open(CACHE_NAME);
+        const cachedResponse = await appCache.match(request);
+        if (cachedResponse) {
+          return cachedResponse;
         }
-        // If not in cache, fetch from the network, cache it, and then serve it.
-        return fetch(event.request).then(networkResponse => {
-          // Check for a valid response to cache
-          if (networkResponse && networkResponse.status === 200) {
+
+        // Not in cache, fetch from network
+        const networkResponse = await fetch(request);
+        // Check for a valid, basic (same-origin) response to cache
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
             const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(event.request, responseToCache);
-            });
-          }
-          return networkResponse;
-        });
-      })
-  );
+            await appCache.put(request, responseToCache);
+        }
+        return networkResponse;
+    } catch (error) {
+        console.error('Service Worker fetch failed:', error);
+        // This will result in a network error page.
+    }
+  })());
 });
