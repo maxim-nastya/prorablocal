@@ -51,7 +51,6 @@ export const SmartAddModal = ({ show, onClose, projects, setProjects, workspaceN
         setIsLoading(true);
 
         try {
-            // FIX: Removed redundant 'as string' cast. The type is correctly defined in env.d.ts.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const projectNames = projects.map(p => p.name).join(', ');
 
@@ -87,7 +86,8 @@ export const SmartAddModal = ({ show, onClose, projects, setProjects, workspaceN
                     addToast(`Расход добавлен в проект "${targetProject.name}"`, 'success');
                     setCurrentView({ view: 'project_details', projectId: targetProject.id });
                 } else {
-                    addToast(`Проект "${projectNameFromAI || 'не указан'}" не найден`, 'error');
+                    const name = projectNameFromAI || 'не указан';
+                    addToast(`Проект "${name}" не найден`, 'error');
                 }
             } else if (result.category === 'task' && result.data.taskText) {
                 const newTask: WorkspaceTask = {
