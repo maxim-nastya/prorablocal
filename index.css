@@ -471,6 +471,13 @@ tbody tr:last-child td {
 tbody tr:hover {
     background-color: hsl(var(--primary-hue) 30% 97%);
 }
+tbody tr.dragging {
+    opacity: 0.5;
+    background-color: hsl(var(--primary-hue), 30%, 92%);
+}
+tbody tr.drag-over {
+    border-top: 2px solid hsl(var(--primary-dark));
+}
 
 .item-actions {
     display: flex;
@@ -1186,6 +1193,14 @@ tbody tr:hover {
     color: hsl(var(--text-secondary));
 }
 
+.dashboard-item-link {
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+.dashboard-item-link:hover {
+    background-color: hsl(var(--primary-hue), 30%, 97%);
+    transform: translateX(4px);
+}
 
 /* 6.17 NEW: Comments */
 .comment-btn {
@@ -1476,6 +1491,7 @@ tbody tr:hover {
     padding: 0 var(--space-4);
     max-width: 800px;
     margin: 0 auto;
+    overflow-x: auto;
 }
 
 .tab-nav-btn {
@@ -1489,6 +1505,7 @@ tbody tr:hover {
     border-bottom: 2px solid transparent;
     transition: var(--transition-fast);
     margin-bottom: -1px; /* Overlap border */
+    white-space: nowrap;
 }
 
 .tab-nav-btn:hover {

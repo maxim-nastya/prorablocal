@@ -299,6 +299,9 @@ const EstimateEditor = ({ estimate, projectId, onUpdate, onDelete, directory, se
     const [showCommentModal, setShowCommentModal] = useState(false);
     const [commentingItem, setCommentingItem] = useState<EstimateItem | null>(null);
 
+    const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+    const [dragOverItemId, setDragOverItemId] = useState<string | null>(null);
+
     useEffect(() => {
         setDiscountType(estimate.discount?.type || 'percent');
         setDiscountValue(estimate.discount?.value || '');
@@ -524,6 +527,37 @@ const EstimateEditor = ({ estimate, projectId, onUpdate, onDelete, directory, se
         onUpdate({ ...estimate, items: updatedItems });
         addToast(`Шаблон "${template.name}" применен`, 'success');
     };
+
+    // --- Drag and Drop Handlers ---
+    const handleDragStart = (itemId: string) => {
+        setDraggedItemId(itemId);
+    };
+
+    const handleDragEnter = (itemId: string) => {
+        if (itemId !== draggedItemId) {
+            setDragOverItemId(itemId);
+        }
+    };
+    
+    const handleDragEnd = () => {
+        setDraggedItemId(null);
+        setDragOverItemId(null);
+    };
+
+    const handleDrop = (targetItemId: string) => {
+        if (!draggedItemId || draggedItemId === targetItemId) return;
+
+        const reorderedItems = [...estimate.items];
+        const draggedItemIndex = reorderedItems.findIndex(i => i.id === draggedItemId);
+        const targetItemIndex = reorderedItems.findIndex(i => i.id === targetItemId);
+
+        if (draggedItemIndex === -1 || targetItemIndex === -1) return;
+
+        const [draggedItem] = reorderedItems.splice(draggedItemIndex, 1);
+        reorderedItems.splice(targetItemIndex, 0, draggedItem);
+        
+        onUpdate({ ...estimate, items: reorderedItems });
+    };
     
     return (
         <div className="card">
@@ -583,7 +617,21 @@ const EstimateEditor = ({ estimate, projectId, onUpdate, onDelete, directory, se
                                 <tr><td colSpan={5} style={{textAlign: 'center', padding: '1rem'}}>Позиций пока нет.</td></tr>
                             ) : (
                                 estimate.items.map((item, index) => (
-                                    <tr key={item.id} className="animate-fade-slide-up" style={{ animationDelay: `${index * 50}ms` }}>
+                                    <tr 
+                                        key={item.id} 
+                                        draggable="true"
+                                        onDragStart={() => handleDragStart(item.id)}
+                                        onDragEnter={() => handleDragEnter(item.id)}
+                                        onDragLeave={() => setDragOverItemId(null)}
+                                        onDragEnd={handleDragEnd}
+                                        onDragOver={(e) => e.preventDefault()}
+                                        onDrop={() => handleDrop(item.id)}
+                                        className={`
+                                            animate-fade-slide-up 
+                                            ${draggedItemId === item.id ? 'dragging' : ''}
+                                            ${dragOverItemId === item.id ? 'drag-over' : ''}
+                                        `}
+                                        style={{ animationDelay: `${index * 50}ms` }}>
                                         <td>
                                             <strong>{item.name}</strong>
                                             <br />

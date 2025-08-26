@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import type { ToastMessage, PhotoReport, ViewState } from './types';
-import { DirectoryIcon, LogoIcon, LogoutIcon, ProjectsIcon, ReportsIcon, SettingsIcon, ToolIcon } from './icons';
+import { DashboardIcon, DirectoryIcon, LogoIcon, LogoutIcon, ProjectsIcon, ReportsIcon, SettingsIcon, ToolIcon } from './icons';
 
 // --- UI COMPONENTS ---
 
@@ -172,7 +172,7 @@ export const Header = ({ onNavigate, onLogout }: { onNavigate: (view: ViewState)
     return (
         <header>
             <div className="header-content">
-                 <a href="#" onClick={(e) => { e.preventDefault(); onNavigate({ view: 'projects' }); }} className="header-logo" aria-label="На главную">
+                 <a href="#" onClick={(e) => { e.preventDefault(); onNavigate({ view: 'dashboard' }); }} className="header-logo" aria-label="На главную">
                     <LogoIcon />
                     <span>Прораб</span>
                 </a>
@@ -191,6 +191,7 @@ export const Header = ({ onNavigate, onLogout }: { onNavigate: (view: ViewState)
 
 export const TabView = ({ currentView, onNavigate }: { currentView: ViewState['view'], onNavigate: (view: ViewState) => void }) => {
     const navItems = [
+        { view: 'dashboard' as const, label: 'Сегодня' },
         { view: 'projects' as const, label: 'Проекты' },
         { view: 'reports' as const, label: 'Отчеты' },
         { view: 'directory' as const, label: 'Справочник' },
@@ -214,6 +215,7 @@ export const TabView = ({ currentView, onNavigate }: { currentView: ViewState['v
 
 export const BottomNav = ({ currentView, onNavigate }: { currentView: ViewState['view'], onNavigate: (view: ViewState) => void }) => {
     const navItems = [
+        { view: 'dashboard' as const, label: 'Сегодня', icon: <DashboardIcon /> },
         { view: 'projects' as const, label: 'Проекты', icon: <ProjectsIcon /> },
         { view: 'inventory' as const, label: 'Инвентарь', icon: <ToolIcon /> },
         { view: 'directory' as const, label: 'Справочник', icon: <DirectoryIcon /> },

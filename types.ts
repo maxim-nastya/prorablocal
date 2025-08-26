@@ -144,6 +144,7 @@ export type FormEstimateItem = {
 };
 
 export type ViewState = 
+    | { view: 'dashboard' } 
     | { view: 'projects' } 
     | { view: 'project_details'; projectId: string; }
     | { view: 'reports' }
@@ -152,6 +153,11 @@ export type ViewState =
     | { view: 'inventory' };
 
 // --- PROP TYPES ---
+
+export interface DashboardViewProps {
+    projects: Project[];
+    setCurrentView: (view: ViewState) => void;
+}
 
 export interface ProjectDetailsViewProps {
     project: Project;

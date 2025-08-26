@@ -19,6 +19,7 @@ import { InventoryView } from './view_Inventory';
 import { PublicEstimateView } from './view_PublicEstimate';
 import { ProjectFormModal } from './view_ProjectFormModal';
 import { SubscriptionView } from './view_Subscription';
+import { DashboardView } from './view_Dashboard';
 
 
 // --- PWA Service Worker Registration ---
@@ -46,7 +47,7 @@ const App = () => {
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
     const [inventoryNotes, setInventoryNotes] = useState<ProjectNote[]>([]);
 
-    const [currentView, setCurrentView] = useState<ViewState>({ view: 'projects' });
+    const [currentView, setCurrentView] = useState<ViewState>({ view: 'dashboard' });
     const [showProjectModal, setShowProjectModal] = useState(false);
     
     const { addToast } = useToasts();
@@ -171,12 +172,16 @@ const App = () => {
         return <AuthScreen onLogin={handleLogin} />;
     }
 
+
+
     if (subscriptionStatus === 'expired') {
         return <SubscriptionView user={user} onActivate={handleActivateSubscription} onLogout={handleLogout} />;
     }
     
     const renderContent = () => {
         switch (currentView.view) {
+            case 'dashboard':
+                return <DashboardView projects={projects} setCurrentView={setCurrentView} />;
             case 'projects':
                 return <ProjectListView projects={projects} setProjects={setProjects} onSelectProject={(id) => setCurrentView({ view: 'project_details', projectId: id })} onShowNewProjectModal={() => setShowProjectModal(true)} />;
             case 'project_details': {
