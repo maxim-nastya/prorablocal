@@ -1,4 +1,4 @@
-import type { User, Project, DirectoryItem, UserProfile, EstimateTemplate, InventoryItem, ProjectNote, Estimate, Comment } from './types';
+import type { User, Project, DirectoryItem, UserProfile, EstimateTemplate, InventoryItem, ProjectNote, Estimate, Comment, PhotoReport } from './types';
 import { generateId } from './utils';
 
 // --- Local Storage Database ---
@@ -166,6 +166,33 @@ export const api = {
             }
         }
         throw new Error('Could not add comment: item not found');
+    },
+
+    async addPublicPhotoComment(projectId: string, photoReportId: string, commentText: string): Promise<{ success: boolean }> {
+        const db = getDb();
+        const newComment: Comment = {
+            id: generateId(),
+            author: 'Клиент',
+            text: commentText,
+            timestamp: new Date().toISOString()
+        };
+
+        for (const email in db.data) {
+            const userData = db.data[email];
+            const project = userData.projects.find(p => p.id === projectId);
+            if (project) {
+                const photoReport = (project.photoReports || []).find(pr => pr.id === photoReportId);
+                if (photoReport) {
+                    if (!photoReport.comments) {
+                        photoReport.comments = [];
+                    }
+                    photoReport.comments.push(newComment);
+                    saveDb(db);
+                    return { success: true };
+                }
+            }
+        }
+        throw new Error('Could not add comment: photo report not found');
     },
 
     // --- Data Saving (FIXED to be atomic) ---

@@ -81,6 +81,7 @@ export interface PhotoReport {
     date: string;
     description: string;
     imageUrl: string; // URL to cached image
+    comments?: Comment[];
 }
 
 export interface ProjectScheduleItem {

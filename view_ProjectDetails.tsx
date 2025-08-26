@@ -68,7 +68,7 @@ export const FinancialDashboard = ({ project, variant = 'full' }: { project: Pro
     );
 };
 
-const CommentModal = ({ show, onClose, item, onAddComment }: { show: boolean, onClose: () => void, item: EstimateItem | null, onAddComment: (itemId: string, commentText: string) => void }) => {
+const CommentModal = ({ show, onClose, item, onAddComment, author }: { show: boolean, onClose: () => void, item: { id: string, name: string, comments?: Comment[] } | null, onAddComment: (itemId: string, commentText: string) => void, author: 'Исполнитель' | 'Клиент' }) => {
     const [newComment, setNewComment] = useState('');
     
     if (!item) return null;
@@ -510,6 +510,8 @@ const EstimateEditor = ({ estimate, projectId, onUpdate, onDelete, directory, se
         });
 
         onUpdate({ ...estimate, items: updatedItems });
+        // Update item in modal for seamless experience
+        setCommentingItem(prev => prev ? { ...prev, comments: [...(prev.comments || []), newComment] } : null);
     };
 
     const handleApplyTemplate = (template: EstimateTemplate) => {
@@ -726,6 +728,7 @@ const EstimateEditor = ({ estimate, projectId, onUpdate, onDelete, directory, se
                 onClose={() => setShowCommentModal(false)}
                 item={commentingItem}
                 onAddComment={handleAddComment}
+                author="Исполнитель"
             />
             <TemplateModal
                 show={showTemplateModal}
@@ -938,6 +941,9 @@ const PhotoReports = ({ project, projects, setProjects }: { project: Project, pr
     const [isViewerOpen, setIsViewerOpen] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
+    const [showCommentModal, setShowCommentModal] = useState(false);
+    const [commentingPhoto, setCommentingPhoto] = useState<PhotoReport | null>(null);
+
     const photoReports = project.photoReports || [];
 
     const openViewer = (index: number) => {
@@ -1017,6 +1023,37 @@ const PhotoReports = ({ project, projects, setProjects }: { project: Project, pr
         }
     };
 
+    const handleAddComment = async (photoId: string, commentText: string) => {
+        const newComment: Comment = {
+            id: generateId(),
+            author: 'Исполнитель',
+            text: commentText,
+            timestamp: new Date().toISOString()
+        };
+
+        const updatedProjects = projects.map(p => {
+            if (p.id === project.id) {
+                const updatedReports = (p.photoReports || []).map(report => {
+                    if (report.id === photoId) {
+                        return { ...report, comments: [...(report.comments || []), newComment] };
+                    }
+                    return report;
+                });
+                return { ...p, photoReports: updatedReports };
+            }
+            return p;
+        });
+
+        setProjects(updatedProjects);
+        await api.saveProjects(updatedProjects);
+        setCommentingPhoto(prev => prev ? { ...prev, comments: [...(prev.comments || []), newComment] } : null);
+    };
+
+    const openCommentModal = (report: PhotoReport) => {
+        setCommentingPhoto(report);
+        setShowCommentModal(true);
+    };
+
     return (
         <div className="card">
             <div 
@@ -1048,9 +1085,15 @@ const PhotoReports = ({ project, projects, setProjects }: { project: Project, pr
                                     <p>{report.description}</p>
                                     <small>{new Date(report.date).toLocaleDateString('ru-RU')}</small>
                                 </div>
-                                <button className="photo-report-delete-btn action-btn" onClick={(e) => { e.stopPropagation(); handleDeleteReport(report.id); }} aria-label="Удалить фотоотчет">
-                                    <DeleteIcon />
-                                </button>
+                                <div style={{position: 'absolute', top: 0, right: 0, display: 'flex'}}>
+                                    <button className="photo-report-delete-btn action-btn comment-btn" onClick={(e) => { e.stopPropagation(); openCommentModal(report); }} aria-label="Комментарии">
+                                        <CommentIcon />
+                                        {(report.comments?.length || 0) > 0 && <span className="comment-badge">{report.comments?.length}</span>}
+                                    </button>
+                                    <button className="photo-report-delete-btn action-btn" onClick={(e) => { e.stopPropagation(); handleDeleteReport(report.id); }} aria-label="Удалить фотоотчет">
+                                        <DeleteIcon />
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -1084,6 +1127,13 @@ const PhotoReports = ({ project, projects, setProjects }: { project: Project, pr
                 onClose={closeViewer}
                 images={photoReports}
                 startIndex={currentImageIndex}
+            />
+             <CommentModal
+                show={showCommentModal}
+                onClose={() => setShowCommentModal(false)}
+                item={commentingPhoto ? { id: commentingPhoto.id, name: commentingPhoto.description, comments: commentingPhoto.comments } : null}
+                onAddComment={handleAddComment}
+                author="Исполнитель"
             />
         </div>
     );

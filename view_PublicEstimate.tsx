@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { api } from './api';
-import type { Project, Estimate, EstimateItem, Comment } from './types';
+import type { Project, Estimate, EstimateItem, Comment, PhotoReport } from './types';
 import { useToasts, Loader, Modal } from './components';
 import { generateId, formatCurrency } from './utils';
 import { LogoIcon, PrintIcon, CheckIcon, CommentIcon, ImageIcon } from './icons';
 
-const CommentModal = ({ show, onClose, item, onAddComment }: { show: boolean, onClose: () => void, item: EstimateItem | null, onAddComment: (itemId: string, commentText: string) => void }) => {
+interface CommentableItem {
+    id: string;
+    name: string;
+    comments?: Comment[];
+}
+
+const CommentModal = ({ show, onClose, item, onAddComment }: { show: boolean, onClose: () => void, item: CommentableItem | null, onAddComment: (itemId: string, commentText: string) => void }) => {
     const [newComment, setNewComment] = useState('');
     
     if (!item) return null;
@@ -57,7 +63,8 @@ export const PublicEstimateView = () => {
     const { addToast } = useToasts();
     
     const [showCommentModal, setShowCommentModal] = useState(false);
-    const [commentingItem, setCommentingItem] = useState<EstimateItem | null>(null);
+    const [commentingItem, setCommentingItem] = useState<CommentableItem | null>(null);
+    const [commentingEntityType, setCommentingEntityType] = useState<'item' | 'photo' | null>(null);
     const [urlParams, setUrlParams] = useState({ projectId: '', estimateId: '' });
     
     useEffect(() => {
@@ -100,33 +107,67 @@ export const PublicEstimateView = () => {
         }
     };
 
-    const handleAddComment = async (itemId: string, commentText: string) => {
-        if (!project || !estimate) return;
+    const handleAddComment = async (entityId: string, commentText: string) => {
+        if (!project || !estimate || !commentingEntityType) return;
 
-        // Optimistic UI update
-        const originalEstimate = estimate;
         const newComment: Comment = {
-            id: generateId(), // Temporary ID for UI
+            id: generateId(),
             author: 'Клиент',
             text: commentText,
             timestamp: new Date().toISOString()
         };
-        const updatedEstimate = {
-            ...estimate,
-            items: estimate.items.map(item =>
-                item.id === itemId ? { ...item, comments: [...(item.comments || []), newComment] } : item
-            )
-        };
-        setEstimate(updatedEstimate);
-        
-        // Persist change
-        try {
-            await api.addPublicComment(urlParams.projectId, urlParams.estimateId, itemId, commentText);
-            addToast("Комментарий добавлен", "success");
-        } catch (err) {
-             addToast('Не удалось сохранить комментарий. Пожалуйста, обновите страницу.', 'error');
-             setEstimate(originalEstimate); // Revert on failure
+
+        // Optimistic UI update
+        if (commentingEntityType === 'item') {
+            const originalEstimate = { ...estimate };
+            setEstimate(prev => {
+                if (!prev) return null;
+                return {
+                    ...prev,
+                    items: prev.items.map(item =>
+                        item.id === entityId ? { ...item, comments: [...(item.comments || []), newComment] } : item
+                    )
+                }
+            });
+            // Persist
+            try {
+                await api.addPublicComment(urlParams.projectId, urlParams.estimateId, entityId, commentText);
+            } catch (err) {
+                addToast('Не удалось сохранить комментарий.', 'error');
+                setEstimate(originalEstimate); // Revert on failure
+            }
+        } else if (commentingEntityType === 'photo') {
+            const originalProject = { ...project };
+            setProject(prev => {
+                if (!prev) return null;
+                return {
+                    ...prev,
+                    photoReports: (prev.photoReports || []).map(photo => 
+                        photo.id === entityId ? { ...photo, comments: [...(photo.comments || []), newComment] } : photo
+                    )
+                }
+            });
+             // Persist
+            try {
+                await api.addPublicPhotoComment(urlParams.projectId, entityId, commentText);
+            } catch (err) {
+                addToast('Не удалось сохранить комментарий.', 'error');
+                setProject(originalProject); // Revert on failure
+            }
         }
+        
+        // Update the item in the modal as well for a seamless experience
+        setCommentingItem(prev => prev ? { ...prev, comments: [...(prev.comments || []), newComment] } : null);
+    };
+
+    const openCommentModal = (entity: EstimateItem | PhotoReport, type: 'item' | 'photo') => {
+        setCommentingEntityType(type);
+        setCommentingItem({
+            id: entity.id,
+            name: 'description' in entity ? entity.description : entity.name,
+            comments: entity.comments,
+        });
+        setShowCommentModal(true);
     };
 
     if (loading) return <Loader fullScreen />;
@@ -186,7 +227,7 @@ export const PublicEstimateView = () => {
                                     <td className="align-right">{formatCurrency(item.price)}</td>
                                     <td className="align-right">{formatCurrency(item.quantity * item.price)}</td>
                                     <td className="align-right">
-                                        <button className="action-btn comment-btn" onClick={() => { setCommentingItem(item); setShowCommentModal(true); }}>
+                                        <button className="action-btn comment-btn" onClick={() => openCommentModal(item, 'item')}>
                                             <CommentIcon />
                                             {(item.comments?.length || 0) > 0 && <span className="comment-badge">{item.comments?.length}</span>}
                                         </button>
@@ -219,8 +260,16 @@ export const PublicEstimateView = () => {
                             <div key={report.id} className="photo-report-card-public">
                                 <img src={report.imageUrl} alt={report.description} />
                                 <div className="photo-report-info-public">
-                                    <p>{report.description}</p>
-                                    <small>{new Date(report.date).toLocaleDateString('ru-RU')}</small>
+                                    <div className="d-flex justify-between align-center">
+                                        <div>
+                                            <p>{report.description}</p>
+                                            <small>{new Date(report.date).toLocaleDateString('ru-RU')}</small>
+                                        </div>
+                                        <button className="action-btn comment-btn" onClick={() => openCommentModal(report, 'photo')}>
+                                            <CommentIcon />
+                                            {(report.comments?.length || 0) > 0 && <span className="comment-badge">{report.comments?.length}</span>}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
