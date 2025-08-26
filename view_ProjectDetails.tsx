@@ -947,7 +947,7 @@ const PhotoReports = ({ project, projects, setProjects }: { project: Project, pr
         }
         setIsSaving(true);
         try {
-            const imageUrl = await cacheImage(reportFile);
+            const imageUrl = await fileToBase64(reportFile);
             const reportWithId: PhotoReport = {
                 ...newReport,
                 id: generateId(),
@@ -979,22 +979,13 @@ const PhotoReports = ({ project, projects, setProjects }: { project: Project, pr
         if (!window.confirm('Вы уверены, что хотите удалить этот фотоотчет?')) return;
 
         try {
-            let imageUrlToDelete: string | null = null;
             const updatedProjects = projects.map(p => {
                 if (p.id === project.id) {
-                    const report = (p.photoReports || []).find(r => r.id === reportId);
-                    if (report) {
-                        imageUrlToDelete = report.imageUrl;
-                    }
                     const updatedReports = (p.photoReports || []).filter(r => r.id !== reportId);
                     return { ...p, photoReports: updatedReports };
                 }
                 return p;
             });
-
-            if (imageUrlToDelete) {
-                await deleteCachedImage(imageUrlToDelete);
-            }
 
             setProjects(updatedProjects);
             await api.saveProjects(updatedProjects);
@@ -1489,13 +1480,6 @@ export const ProjectDetailsView = ({ project, projects, setProjects, onBack, dir
     const handleDeleteProject = async () => {
         if (window.confirm('Вы уверены, что хотите удалить этот проект? Это действие нельзя отменить.')) {
             try {
-                // Also delete all cached images for this project
-                if (project.photoReports) {
-                    for (const report of project.photoReports) {
-                        await deleteCachedImage(report.imageUrl);
-                    }
-                }
-
                 const updatedProjects = projects.filter(p => p.id !== project.id);
                 setProjects(updatedProjects);
                 await api.saveProjects(updatedProjects);
