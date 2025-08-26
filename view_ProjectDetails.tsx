@@ -1368,6 +1368,10 @@ _________________ (Заказчик)
 
             <FinancialDashboard project={project} />
 
+            <ProjectNotes project={project} projects={projects} setProjects={setProjects} />
+            <ProjectSchedule project={project} projects={projects} setProjects={setProjects} />
+            <ProjectDocuments project={project} projects={projects} setProjects={setProjects} />
+
             <div className="estimates-container">
                 {project.estimates.map(estimate => (
                      <EstimateEditor 
@@ -1384,13 +1388,10 @@ _________________ (Заказчик)
                     />
                 ))}
             </div>
-             <div style={{textAlign: 'center', marginTop: 'var(--space-6)'}}>
+            <div style={{textAlign: 'center', marginTop: 'var(--space-6)'}}>
                  <button className="btn btn-secondary" onClick={handleAddEstimate}>+ Добавить смету</button>
-             </div>
+            </div>
             
-            <ProjectNotes project={project} projects={projects} setProjects={setProjects} />
-            <ProjectSchedule project={project} projects={projects} setProjects={setProjects} />
-            <ProjectDocuments project={project} projects={projects} setProjects={setProjects} />
             <ExpenseTracker project={project} projects={projects} setProjects={setProjects} />
             <PhotoReports project={project} projects={projects} setProjects={setProjects} />
             
