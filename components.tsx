@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
-import type { ToastMessage, PhotoReport, User, ViewState } from './types';
+import type { ToastMessage, PhotoReport, ViewState } from './types';
 import { DirectoryIcon, LogoIcon, LogoutIcon, ProjectsIcon, ReportsIcon, SettingsIcon, ToolIcon } from './icons';
 
 // --- UI COMPONENTS ---
@@ -130,7 +130,45 @@ export const PhotoViewerModal = ({ show, onClose, images, startIndex }: PhotoVie
     );
 };
 
-export const Header = ({ onNavigate, onLogout }: { user: User | null, onNavigate: (view: ViewState) => void, onLogout: () => void }) => {
+const UserMenu = ({ onNavigate, onLogout, closeMenu }: { onNavigate: (view: ViewState) => void, onLogout: () => void, closeMenu: () => void }) => {
+    
+    const handleNavigate = (view: ViewState) => {
+        onNavigate(view);
+        closeMenu();
+    };
+
+    const handleLogout = () => {
+        onLogout();
+        closeMenu();
+    }
+
+    return (
+        <div className="user-menu">
+            <button className="user-menu-item" onClick={() => handleNavigate({ view: 'settings' })}>
+                <SettingsIcon />
+                <span>Настройки</span>
+            </button>
+             <button className="user-menu-item" onClick={handleLogout}>
+                <LogoutIcon />
+                <span>Выход</span>
+            </button>
+        </div>
+    );
+};
+
+export const Header = ({ onNavigate, onLogout }: { onNavigate: (view: ViewState) => void, onLogout: () => void }) => {
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (isMenuOpen && !(event.target as HTMLElement).closest('.user-menu-container')) {
+                setIsMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isMenuOpen]);
+    
     return (
         <header>
             <div className="header-content">
@@ -139,14 +177,38 @@ export const Header = ({ onNavigate, onLogout }: { user: User | null, onNavigate
                     <span>Прораб</span>
                 </a>
                 <div className="header-actions">
-                     <button className="settings-btn" onClick={() => onNavigate({ view: 'reports' })} aria-label="Отчеты"><ReportsIcon /></button>
-                     <button className="settings-btn" onClick={() => onNavigate({ view: 'directory' })} aria-label="Справочник"><DirectoryIcon /></button>
-                     <button className="settings-btn" onClick={() => onNavigate({ view: 'inventory' })} aria-label="Инвентарь"><ToolIcon /></button>
-                     <button className="settings-btn" onClick={() => onNavigate({ view: 'settings' })} aria-label="Настройки"><SettingsIcon /></button>
-                     <button className="settings-btn" onClick={onLogout} aria-label="Выход"><LogoutIcon /></button>
+                    <div className="user-menu-container">
+                         <button className="settings-btn" onClick={() => setIsMenuOpen(o => !o)} aria-label="Меню" aria-haspopup="true" aria-expanded={isMenuOpen}>
+                             <SettingsIcon />
+                         </button>
+                        {isMenuOpen && <UserMenu onNavigate={onNavigate} onLogout={onLogout} closeMenu={() => setIsMenuOpen(false)} />}
+                    </div>
                 </div>
             </div>
         </header>
+    );
+};
+
+export const TabView = ({ currentView, onNavigate }: { currentView: ViewState['view'], onNavigate: (view: ViewState) => void }) => {
+    const navItems = [
+        { view: 'projects' as const, label: 'Проекты' },
+        { view: 'reports' as const, label: 'Отчеты' },
+        { view: 'directory' as const, label: 'Справочник' },
+        { view: 'inventory' as const, label: 'Инвентарь' },
+    ];
+
+    return (
+        <nav className="tab-nav">
+            {navItems.map(item => (
+                 <button
+                    key={item.view}
+                    className={`tab-nav-btn ${currentView === item.view ? 'active' : ''}`}
+                    onClick={() => onNavigate({ view: item.view })}
+                >
+                    {item.label}
+                </button>
+            ))}
+        </nav>
     );
 };
 

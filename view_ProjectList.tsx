@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import type { Project } from './types';
-import { SearchIcon } from './icons';
+import { SearchIcon, PlusIcon } from './icons';
 import { FinancialDashboard } from './view_ProjectDetails';
 
 export const ProjectListView = ({ projects, onSelectProject, onShowNewProjectModal }: { projects: Project[], setProjects: React.Dispatch<React.SetStateAction<Project[]>>, onSelectProject: (projectId: string) => void, onShowNewProjectModal: () => void }) => {
@@ -63,7 +63,7 @@ export const ProjectListView = ({ projects, onSelectProject, onShowNewProjectMod
                 </div>
             )}
 
-            {filter === 'В работе' && <button className="fab" onClick={onShowNewProjectModal} aria-label="Новый проект">+</button>}
+            {filter === 'В работе' && <button className="fab" onClick={onShowNewProjectModal} aria-label="Новый проект"><PlusIcon /></button>}
         </>
     );
 };

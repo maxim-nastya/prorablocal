@@ -301,6 +301,7 @@ main {
     z-index: 1000;
     transition: var(--transition-fast);
     animation: bounce-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.5s both;
+    font-size: 24px;
 }
 .fab:hover {
     transform: scale(1.1);
@@ -1433,6 +1434,82 @@ tbody tr:hover {
     padding-top: var(--space-5);
 }
 
+/* 6.23 Tab Navigation */
+.tab-nav {
+    display: flex;
+    justify-content: center;
+    background-color: hsl(var(--surface));
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 var(--space-4);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.tab-nav-btn {
+    padding: var(--space-4) var(--space-5);
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: var(--text-base);
+    font-weight: 500;
+    color: hsl(var(--text-secondary));
+    border-bottom: 2px solid transparent;
+    transition: var(--transition-fast);
+    margin-bottom: -1px; /* Overlap border */
+}
+
+.tab-nav-btn:hover {
+    color: hsl(var(--primary-dark));
+}
+
+.tab-nav-btn.active {
+    color: hsl(var(--primary-dark));
+    border-bottom-color: hsl(var(--primary-dark));
+}
+
+/* 6.24 User Menu */
+.user-menu-container {
+    position: relative;
+}
+
+.user-menu {
+    position: absolute;
+    top: calc(100% + var(--space-3));
+    right: 0;
+    background-color: hsl(var(--surface));
+    border-radius: var(--border-radius-sm);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+    z-index: 1100;
+    width: 200px;
+    overflow: hidden;
+    animation: fade-slide-up 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.user-menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border: none;
+    background: none;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    font-size: var(--text-base);
+    color: hsl(var(--text-primary));
+    transition: var(--transition-fast);
+}
+
+.user-menu-item:hover {
+    background-color: hsl(var(--surface-muted));
+}
+.user-menu-item:not(:last-child) {
+    border-bottom: 1px solid var(--border-color);
+}
+.user-menu-item svg {
+    color: hsl(var(--text-secondary));
+}
 
 /* 7. Accessibility & Mobile */
 @media (prefers-reduced-motion: reduce) {
@@ -1448,18 +1525,26 @@ tbody tr:hover {
 }
 
 @media (max-width: 768px) {
+    .tab-nav {
+        display: none;
+    }
+
     .app-container {
-        padding-bottom: 90px; /* Space for taller bottom nav (74px) + margin (16px) */
+        padding-bottom: 96px; /* Space for taller bottom nav (80px) + margin (16px) */
     }
 
     .fab {
-        bottom: 90px; /* Adjust FAB position to sit above new nav height */
+        bottom: 96px; /* Adjust FAB position to sit above new nav height */
         right: var(--space-4); /* Align with container padding */
     }
 
     /* Increased padding on smaller buttons for easier tapping */
     .action-btn {
         padding: 15px; /* Makes tap target ~48px */
+    }
+    
+    .btn-sm {
+        padding: var(--space-3) var(--space-4); /* Taller tap targets for small buttons */
     }
 
     header .header-actions .settings-btn[aria-label="Справочник"],
@@ -1476,7 +1561,7 @@ tbody tr:hover {
         bottom: 0;
         left: 0;
         right: 0;
-        height: 74px; /* Increased height for better touch experience */
+        height: 80px; /* Increased height for a better, more comfortable touch experience */
         background-color: hsla(var(--surface), 0.85);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
@@ -1496,7 +1581,7 @@ tbody tr:hover {
         color: hsl(var(--text-secondary));
         flex-grow: 1;
         height: 100%;
-        font-size: 12px; /* Increased for better readability */
+        font-size: 13px; /* Slightly larger font for better readability */
         gap: var(--space-1); /* 4px */
         cursor: pointer;
         transition: var(--transition-fast);
@@ -1560,7 +1645,7 @@ tbody tr:hover {
 @media print {
     body { background-color: #fff; background-image: none; }
     header, .fab, .back-button, .project-header-actions, .item-actions, .form-actions button, .modal-overlay,
-    .print-button, .public-footer, .btn, .action-btn, .settings-btn, .estimate-summary-container .discount-controls, .reports-header, .bottom-nav, .approval-section { display: none !important; }
+    .print-button, .public-footer, .btn, .action-btn, .settings-btn, .estimate-summary-container .discount-controls, .reports-header, .bottom-nav, .approval-section, .tab-nav, .user-menu { display: none !important; }
     .app-container, .public-estimate-container { max-width: 100%; padding: 0; margin: 0; }
     .card, .report-card { box-shadow: none; border: 1px solid #ccc; padding: 1rem; page-break-inside: avoid; border-radius: 0; }
     h1, h2, h3 { color: #000; }

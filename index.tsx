@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 // Local module imports
 import { api, setToken } from './api';
 import { useLocalStorage } from './hooks';
-import { Loader, ToastProvider, useToasts, Header, BottomNav } from './components';
+import { Loader, ToastProvider, useToasts, Header, BottomNav, TabView } from './components';
 import type {
     User, Project, DirectoryItem, UserProfile, EstimateTemplate,
     InventoryItem, ProjectNote, ViewState
@@ -205,7 +205,8 @@ const App = () => {
 
     return (
         <>
-            <Header user={user} onNavigate={setCurrentView} onLogout={handleLogout} />
+            <Header onNavigate={setCurrentView} onLogout={handleLogout} />
+            <TabView currentView={currentView.view} onNavigate={setCurrentView} />
             <main className="app-container">
                 {renderContent()}
             </main>
