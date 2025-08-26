@@ -51,7 +51,7 @@ export const ProjectListView = ({ projects, onSelectProject, onShowNewProjectMod
                                     {p.status}
                                 </span>
                             </div>
-                            <FinancialDashboard project={p} />
+                            <FinancialDashboard project={p} variant="compact" />
                         </div>
                     ))}
                 </div>

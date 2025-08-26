@@ -130,6 +130,17 @@ const App = () => {
         }
     };
 
+    const handleEditTemplate = async (template: EstimateTemplate) => {
+        try {
+            const updatedTemplates = templates.map(t => t.id === template.id ? template : t);
+            setTemplates(updatedTemplates);
+            await api.saveTemplates(updatedTemplates);
+            addToast('Шаблон обновлен!', 'success');
+        } catch (e) {
+            addToast('Не удалось обновить шаблон', 'error');
+        }
+    };
+
     const handleDeleteTemplate = async (templateId: string) => {
         if (!window.confirm('Вы уверены, что хотите удалить этот шаблон?')) return;
         try {
@@ -185,6 +196,7 @@ const App = () => {
                         setDirectory={setDirectory}
                         templates={templates}
                         onSaveTemplate={handleSaveTemplate}
+                        onEditTemplate={handleEditTemplate}
                         onDeleteTemplate={handleDeleteTemplate}
                     />
                 );

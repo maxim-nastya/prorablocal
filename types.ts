@@ -161,6 +161,7 @@ export interface ProjectDetailsViewProps {
     setDirectory: React.Dispatch<React.SetStateAction<DirectoryItem[]>>;
     templates: EstimateTemplate[];
     onSaveTemplate: (template: EstimateTemplate) => Promise<void>;
+    onEditTemplate: (template: EstimateTemplate) => Promise<void>;
     onDeleteTemplate: (templateId: string) => Promise<void>;
 }
 
@@ -173,6 +174,7 @@ export interface EstimateEditorProps {
     setDirectory: React.Dispatch<React.SetStateAction<DirectoryItem[]>>;
     templates: EstimateTemplate[];
     onSaveTemplate: (template: EstimateTemplate) => Promise<void>;
+    onEditTemplate: (template: EstimateTemplate) => Promise<void>;
     onDeleteTemplate: (templateId: string) => Promise<void>;
 }
 

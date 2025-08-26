@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { api } from './api';
 import { useToasts, Loader, Modal, PhotoViewerModal } from './components';
 import { formatCurrency, generateId, fileToBase64, cacheImage, deleteCachedImage } from './utils';
@@ -15,7 +15,7 @@ import { ProjectFormModal } from './view_ProjectFormModal';
 
 // --- SUB-COMPONENTS for ProjectDetailsView ---
 
-export const FinancialDashboard = ({ project }: { project: Project }) => {
+export const FinancialDashboard = ({ project, variant = 'full' }: { project: Project, variant?: 'full' | 'compact' }) => {
     const totals = useMemo(() => {
         const estimateTotal = project.estimates.reduce((projectSum, estimate) => {
             const subtotal = estimate.items.reduce((sum, item) => sum + item.quantity * item.price, 0);
@@ -37,38 +37,32 @@ export const FinancialDashboard = ({ project }: { project: Project }) => {
 
         return { estimateTotal, workTotal, expensesTotal, totalPaid, profit, clientDebt };
     }, [project]);
+    
+    const allItems = [
+        { label: "Смета", value: totals.estimateTotal, style: '' },
+        { label: "Оплачено", value: totals.totalPaid, style: '' },
+        { label: "Долг клиента", value: totals.clientDebt, style: totals.clientDebt > 0 ? 'loss' : '' },
+        { label: "Стоимость работ", value: totals.workTotal, style: '' },
+        { label: "Расходы", value: totals.expensesTotal, style: '' },
+        { label: "Прибыль", value: totals.profit, style: totals.profit >= 0 ? 'profit' : 'loss' }
+    ];
+
+    const displayItems = variant === 'compact' 
+        ? allItems.filter(item => ["Смета", "Расходы", "Прибыль"].includes(item.label)) 
+        : allItems;
+
 
     return (
         <div className="card-inset">
             <div className="financial-summary-grid">
-                <div className="summary-item">
-                    <div className="summary-item-label">Смета</div>
-                    <div className="summary-item-value">{formatCurrency(totals.estimateTotal)}</div>
-                </div>
-                <div className="summary-item">
-                    <div className="summary-item-label">Оплачено</div>
-                    <div className="summary-item-value">{formatCurrency(totals.totalPaid)}</div>
-                </div>
-                <div className="summary-item">
-                    <div className="summary-item-label">Долг клиента</div>
-                    <div className={`summary-item-value ${totals.clientDebt > 0 ? 'loss' : ''}`}>
-                        {formatCurrency(totals.clientDebt)}
+                {displayItems.map(item => (
+                    <div className="summary-item" key={item.label}>
+                        <div className="summary-item-label">{item.label}</div>
+                        <div className={`summary-item-value ${item.style}`}>
+                            {formatCurrency(item.value)}
+                        </div>
                     </div>
-                </div>
-                 <div className="summary-item">
-                    <div className="summary-item-label">Стоимость работ</div>
-                    <div className="summary-item-value">{formatCurrency(totals.workTotal)}</div>
-                </div>
-                <div className="summary-item">
-                    <div className="summary-item-label">Расходы</div>
-                    <div className="summary-item-value">{formatCurrency(totals.expensesTotal)}</div>
-                </div>
-                <div className="summary-item">
-                    <div className="summary-item-label">Прибыль</div>
-                    <div className={`summary-item-value ${totals.profit >= 0 ? 'profit' : 'loss'}`}>
-                        {formatCurrency(totals.profit)}
-                    </div>
-                </div>
+                ))}
             </div>
         </div>
     );
@@ -117,8 +111,109 @@ const CommentModal = ({ show, onClose, item, onAddComment }: { show: boolean, on
     );
 };
 
-const TemplateModal = ({ show, onClose, templates, onApplyTemplate, onDeleteTemplate }: { show: boolean, onClose: () => void, templates: EstimateTemplate[], onApplyTemplate: (template: EstimateTemplate) => void, onDeleteTemplate: (templateId: string) => void }) => {
+const TemplateEditorModal = ({ show, onClose, template, onSave }: { show: boolean, onClose: () => void, template: EstimateTemplate | null, onSave: (template: EstimateTemplate) => void }) => {
+    const [editedTemplate, setEditedTemplate] = useState<EstimateTemplate | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (template) {
+            // Deep copy to avoid mutating the original state directly
+            setEditedTemplate(JSON.parse(JSON.stringify(template)));
+        }
+    }, [template]);
+
+    if (!show || !editedTemplate) return null;
+
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setEditedTemplate(prev => prev ? { ...prev, name: e.target.value } : null);
+    };
+
+    const handleItemChange = (index: number, field: string, value: string | number) => {
+        setEditedTemplate(prev => {
+            if (!prev) return null;
+            const newItems = [...prev.items];
+            // FIX: The original `|| {}` fallback created an object that didn't match the required type, causing an error.
+            // This now safely checks if the item exists before attempting an update.
+            const currentItem = newItems[index];
+            if (currentItem) {
+                newItems[index] = { ...currentItem, [field]: value };
+            }
+            return { ...prev, items: newItems };
+        });
+    };
+
+    const handleAddItem = () => {
+        setEditedTemplate(prev => {
+            if (!prev) return null;
+            const newItem = { name: '', type: 'Работа' as const, unit: 'шт', price: 0 };
+            return { ...prev, items: [...prev.items, newItem] };
+        });
+    };
+
+    const handleDeleteItem = (index: number) => {
+        setEditedTemplate(prev => {
+            if (!prev) return null;
+            const newItems = prev.items.filter((_, i) => i !== index);
+            return { ...prev, items: newItems };
+        });
+    };
+
+    const handleSave = async () => {
+        if (!editedTemplate || !editedTemplate.name.trim()) return;
+        setIsSaving(true);
+        await onSave(editedTemplate);
+        setIsSaving(false);
+        onClose();
+    };
+
+    return (
+        <Modal show={show} onClose={onClose} title="Редактор шаблона">
+            <div className="form-group">
+                <label>Название шаблона</label>
+                <input type="text" value={editedTemplate.name} onChange={handleNameChange} required />
+            </div>
+            <label>Позиции</label>
+            <div className="template-list-container" style={{ maxHeight: '40vh', marginBottom: 'var(--space-4)'}}>
+                {editedTemplate.items.map((item, index) => (
+                    <div key={index} className="card-inset" style={{ marginBottom: 'var(--space-3)', padding: 'var(--space-3)' }}>
+                        <div className="d-flex justify-between align-center" style={{marginBottom: 'var(--space-2)'}}>
+                            <p style={{margin: 0, fontWeight: 500}}>Позиция #{index + 1}</p>
+                            <button className="action-btn" onClick={() => handleDeleteItem(index)} aria-label="Удалить позицию"><DeleteIcon /></button>
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Название"
+                            value={item.name}
+                            onChange={(e) => handleItemChange(index, 'name', e.target.value)}
+                            style={{marginBottom: 'var(--space-2)'}}
+                        />
+                        <div className="d-flex gap-1">
+                             <select value={item.type} onChange={(e) => handleItemChange(index, 'type', e.target.value)} style={{flex: 1}}>
+                                <option>Работа</option>
+                                <option>Материал</option>
+                            </select>
+                            <input type="text" placeholder="Ед.изм." value={item.unit} onChange={(e) => handleItemChange(index, 'unit', e.target.value)} style={{flex: 1}}/>
+                            <input type="number" placeholder="Цена" value={item.price} onChange={(e) => handleItemChange(index, 'price', parseFloat(e.target.value) || 0)} style={{flex: 1}}/>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <button className="btn btn-secondary btn-sm" onClick={handleAddItem}>+ Добавить позицию</button>
+
+            <div className="form-actions">
+                <button type="button" className="btn btn-secondary" onClick={onClose}>Отмена</button>
+                <button type="button" className="btn btn-primary" onClick={handleSave} disabled={isSaving}>
+                    {isSaving ? <Loader/> : 'Сохранить'}
+                </button>
+            </div>
+        </Modal>
+    );
+};
+
+const TemplateModal = ({ show, onClose, templates, onApplyTemplate, onDeleteTemplate, onEditTemplate }: { show: boolean, onClose: () => void, templates: EstimateTemplate[], onApplyTemplate: (template: EstimateTemplate) => void, onDeleteTemplate: (templateId: string) => void, onEditTemplate: (template: EstimateTemplate) => void }) => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [editingTemplate, setEditingTemplate] = useState<EstimateTemplate | null>(null);
+
     const filteredTemplates = useMemo(() => {
         const sortedTemplates = [...templates].sort((a, b) => a.name.localeCompare(b.name));
         if (!searchTerm.trim()) return sortedTemplates;
@@ -130,46 +225,63 @@ const TemplateModal = ({ show, onClose, templates, onApplyTemplate, onDeleteTemp
         onClose();
     }
 
+    const handleEdit = (template: EstimateTemplate) => {
+        setEditingTemplate(template);
+    };
+
+    const handleCloseEditor = () => {
+        setEditingTemplate(null);
+    };
+
     return (
-        <Modal show={show} onClose={onClose} title="Применить шаблон">
-             <div className="search-container" style={{marginBottom: 'var(--space-4)'}}>
-                <SearchIcon />
-                <input
-                    type="text"
-                    placeholder="Поиск по названию шаблона..."
-                    className="search-input"
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                />
-            </div>
-            <div className="template-list-container">
-                {filteredTemplates.length > 0 ? (
-                    <div className="data-list">
-                        {filteredTemplates.map(template => (
-                            <div key={template.id} className="data-item">
-                                <div className="data-item-info">
-                                    <p><strong>{template.name}</strong></p>
-                                    <small>{template.items.length} поз.</small>
+        <>
+            <Modal show={show && !editingTemplate} onClose={onClose} title="Применить шаблон">
+                 <div className="search-container" style={{marginBottom: 'var(--space-4)'}}>
+                    <SearchIcon />
+                    <input
+                        type="text"
+                        placeholder="Поиск по названию шаблона..."
+                        className="search-input"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <div className="template-list-container">
+                    {filteredTemplates.length > 0 ? (
+                        <div className="data-list">
+                            {filteredTemplates.map(template => (
+                                <div key={template.id} className="data-item">
+                                    <div className="data-item-info">
+                                        <p><strong>{template.name}</strong></p>
+                                        <small>{template.items.length} поз.</small>
+                                    </div>
+                                    <div className="item-actions">
+                                        <button className="action-btn" onClick={() => handleEdit(template)} aria-label="Редактировать шаблон"><EditIcon /></button>
+                                        <button className="btn btn-primary btn-sm" onClick={() => handleApply(template)}>Применить</button>
+                                        <button className="action-btn" onClick={() => onDeleteTemplate(template.id)} aria-label="Удалить шаблон"><DeleteIcon /></button>
+                                    </div>
                                 </div>
-                                <div className="item-actions">
-                                    <button className="btn btn-primary btn-sm" onClick={() => handleApply(template)}>Применить</button>
-                                    <button className="action-btn" onClick={() => onDeleteTemplate(template.id)} aria-label="Удалить шаблон"><DeleteIcon /></button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <p style={{textAlign: 'center', color: 'hsl(var(--text-secondary))', padding: 'var(--space-4) 0'}}>
-                        {searchTerm ? 'Шаблоны не найдены.' : 'У вас нет сохраненных шаблонов.'}
-                    </p>
-                )}
-            </div>
-        </Modal>
+                            ))}
+                        </div>
+                    ) : (
+                        <p style={{textAlign: 'center', color: 'hsl(var(--text-secondary))', padding: 'var(--space-4) 0'}}>
+                            {searchTerm ? 'Шаблоны не найдены.' : 'У вас нет сохраненных шаблонов.'}
+                        </p>
+                    )}
+                </div>
+            </Modal>
+            <TemplateEditorModal
+                show={!!editingTemplate}
+                onClose={handleCloseEditor}
+                template={editingTemplate}
+                onSave={onEditTemplate}
+            />
+        </>
     );
 }
 
 
-const EstimateEditor = ({ estimate, projectId, onUpdate, onDelete, directory, setDirectory, onSaveTemplate, templates, onDeleteTemplate }: EstimateEditorProps) => {
+const EstimateEditor = ({ estimate, projectId, onUpdate, onDelete, directory, setDirectory, onSaveTemplate, onEditTemplate, templates, onDeleteTemplate }: EstimateEditorProps) => {
     const [isOpen, setIsOpen] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [showShoppingListModal, setShowShoppingListModal] = useState(false);
@@ -621,6 +733,7 @@ const EstimateEditor = ({ estimate, projectId, onUpdate, onDelete, directory, se
                 templates={templates}
                 onApplyTemplate={handleApplyTemplate}
                 onDeleteTemplate={onDeleteTemplate}
+                onEditTemplate={onEditTemplate}
             />
         </div>
     );
@@ -1356,7 +1469,7 @@ const ProjectNotes = ({ project, projects, setProjects }: { project: Project, pr
 
 
 // --- MAIN VIEW COMPONENT ---
-export const ProjectDetailsView = ({ project, projects, setProjects, onBack, directory, setDirectory, templates, onSaveTemplate, onDeleteTemplate }: ProjectDetailsViewProps) => {
+export const ProjectDetailsView = ({ project, projects, setProjects, onBack, directory, setDirectory, templates, onSaveTemplate, onEditTemplate, onDeleteTemplate }: ProjectDetailsViewProps) => {
     const { addToast } = useToasts();
     const [showEditModal, setShowEditModal] = useState(false);
     const [showActModal, setShowActModal] = useState(false);
@@ -1490,7 +1603,7 @@ _________________ (Заказчик)
                 </div>
             </div>
 
-            <FinancialDashboard project={project} />
+            <FinancialDashboard project={project} variant="full" />
 
             <ProjectNotes project={project} projects={projects} setProjects={setProjects} />
             <ProjectSchedule project={project} projects={projects} setProjects={setProjects} />
@@ -1508,6 +1621,7 @@ _________________ (Заказчик)
                         setDirectory={setDirectory}
                         templates={templates}
                         onSaveTemplate={onSaveTemplate}
+                        onEditTemplate={onEditTemplate}
                         onDeleteTemplate={onDeleteTemplate}
                     />
                 ))}
