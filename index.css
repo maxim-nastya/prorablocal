@@ -312,7 +312,7 @@ main {
     border: none;
     cursor: pointer;
     color: hsl(var(--text-secondary));
-    padding: var(--space-2);
+    padding: var(--space-3);
     border-radius: 50%;
     display: inline-flex;
     align-items: center;
@@ -337,7 +337,7 @@ main {
     color: hsl(var(--primary-dark));
 }
 
-.close-button { font-size: var(--text-2xl); }
+.close-button { font-size: var(--text-2xl); padding: var(--space-2); }
 
 .link-button {
     background: none;
@@ -1419,11 +1419,12 @@ tbody tr:hover {
 
 @media (max-width: 768px) {
     .app-container {
-        padding-bottom: 80px; /* Space for bottom nav */
+        padding-bottom: 86px; /* Space for bottom nav (70px) + margin */
     }
 
     .fab {
-        bottom: 80px; /* Adjust FAB position */
+        bottom: 86px; /* Adjust FAB position to sit above nav */
+        right: var(--space-4); /* Align with container padding */
     }
 
     header .header-actions .settings-btn[aria-label="Справочник"],
@@ -1440,7 +1441,7 @@ tbody tr:hover {
         bottom: 0;
         left: 0;
         right: 0;
-        height: 65px; /* A bit taller for touch targets */
+        height: 70px; /* A bit taller for touch targets */
         background-color: hsla(var(--surface), 0.85);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
@@ -1460,8 +1461,8 @@ tbody tr:hover {
         color: hsl(var(--text-secondary));
         flex-grow: 1;
         height: 100%;
-        font-size: 10px; /* Adjusted for 4 items */
-        gap: 2px;
+        font-size: 11px; /* Increased for readability */
+        gap: var(--space-1); /* 4px */
         cursor: pointer;
         transition: var(--transition-fast);
         border-radius: var(--border-radius-sm);
@@ -1486,6 +1487,16 @@ tbody tr:hover {
 }
 
 @media (max-width: 480px) {
+    .header-content {
+        padding: var(--space-4) var(--space-3);
+    }
+    .app-container {
+        padding-left: var(--space-3);
+        padding-right: var(--space-3);
+    }
+    .card {
+        padding: var(--space-4);
+    }
     .form-actions {
         flex-direction: column;
     }
@@ -1503,7 +1514,7 @@ tbody tr:hover {
         display: none;
     }
     .modal-overlay {
-        padding: var(--space-4) var(--space-2);
+        padding: var(--space-4) var(--space-3);
     }
     .modal-content {
         padding: var(--space-5);
